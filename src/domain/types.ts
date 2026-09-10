@@ -45,6 +45,13 @@ export interface DealsRepository {
   listDeals(): Promise<Deal[]>;
 }
 
+/** Puerto: qué ofertas ya se revisaron, compartido entre dispositivos. */
+export interface SeenRepository {
+  listSeen(): Promise<string[]>;
+  markSeen(itemId: string): Promise<void>;
+  unmarkSeen(itemId: string): Promise<void>;
+}
+
 // Mismo criterio que el backend (domain/hardware-signals.ts -> needsBatteryGradeReview):
 // no sabemos la escala de cada vendedor, A/B se asumen aceptables, C/D/F se marcan para revisar.
 const GRADES_TO_REVIEW = new Set(["C", "D", "F"]);

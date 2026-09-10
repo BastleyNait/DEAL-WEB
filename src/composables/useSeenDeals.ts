@@ -1,57 +1,70 @@
-import { onMounted, ref, watch } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
+import type { SeenRepository } from "../domain/types";
 
-const STORAGE_KEY = "revolt-desk-seen";
+const REFRESH_MS = 60_000;
 
 /**
- * Qué ofertas ya revisaste. Se guarda en este navegador (no en el backend) a
- * propósito: la clave anon del dashboard es de solo lectura, y abrir una vía de
- * escritura pública para esto no vale la pena. La contra es que el estado no se
- * comparte entre dispositivos.
+ * Qué ofertas ya revisaste, compartido entre dispositivos a través del backend.
+ * Las marcas se aplican de inmediato en pantalla y se guardan en segundo plano;
+ * si la escritura falla, se revierte y se avisa, para que nunca quede algo
+ * marcado en la pantalla pero no guardado.
  */
-export function useSeenDeals() {
+export function useSeenDeals(repository: SeenRepository) {
   const seenIds = ref<Set<string>>(new Set());
+  const syncError = ref<string | null>(null);
 
-  onMounted(() => {
+  let intervalId: ReturnType<typeof setInterval> | undefined;
+
+  async function reload() {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) seenIds.value = new Set(JSON.parse(stored) as string[]);
-    } catch {
-      // Storage bloqueado o dato corrupto: se arranca sin nada visto.
+      seenIds.value = new Set(await repository.listSeen());
+      syncError.value = null;
+    } catch (err) {
+      syncError.value = err instanceof Error ? err.message : String(err);
     }
-  });
-
-  watch(
-    seenIds,
-    (value) => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify([...value]));
-      } catch {
-        // Sigue funcionando en la sesión, solo no se recuerda.
-      }
-    },
-    { deep: true },
-  );
+  }
 
   function isSeen(itemId: string): boolean {
     return seenIds.value.has(itemId);
   }
 
-  function markSeen(itemId: string) {
+  async function markSeen(itemId: string) {
+    if (seenIds.value.has(itemId)) return;
     seenIds.value.add(itemId);
+    try {
+      await repository.markSeen(itemId);
+      syncError.value = null;
+    } catch (err) {
+      seenIds.value.delete(itemId);
+      syncError.value = err instanceof Error ? err.message : String(err);
+    }
+  }
+
+  async function unmarkSeen(itemId: string) {
+    if (!seenIds.value.has(itemId)) return;
+    seenIds.value.delete(itemId);
+    try {
+      await repository.unmarkSeen(itemId);
+      syncError.value = null;
+    } catch (err) {
+      seenIds.value.add(itemId);
+      syncError.value = err instanceof Error ? err.message : String(err);
+    }
   }
 
   function toggleSeen(itemId: string) {
-    if (seenIds.value.has(itemId)) seenIds.value.delete(itemId);
-    else seenIds.value.add(itemId);
+    return seenIds.value.has(itemId) ? unmarkSeen(itemId) : markSeen(itemId);
   }
 
-  function markAllSeen(itemIds: string[]) {
-    for (const id of itemIds) seenIds.value.add(id);
-  }
+  onMounted(() => {
+    reload();
+    // Refresca para tomar lo que hayas marcado desde otro dispositivo.
+    intervalId = setInterval(reload, REFRESH_MS);
+  });
 
-  function clearSeen() {
-    seenIds.value.clear();
-  }
+  onUnmounted(() => {
+    if (intervalId) clearInterval(intervalId);
+  });
 
-  return { seenIds, isSeen, markSeen, toggleSeen, markAllSeen, clearSeen };
+  return { seenIds, syncError, isSeen, markSeen, unmarkSeen, toggleSeen, reload };
 }

@@ -3,6 +3,7 @@ defineProps<{
   counts: { all: number; great: number; review: number; auction: number; cheapest: number | null };
   lastUpdated: Date | null;
   loading: boolean;
+  syncError: string | null;
 }>();
 
 const emit = defineEmits<{ refresh: []; toggleTheme: [] }>();
@@ -43,7 +44,8 @@ const emit = defineEmits<{ refresh: []; toggleTheme: [] }>();
     </dl>
 
     <div class="actions">
-      <span class="stamp label">
+      <span v-if="syncError" class="stamp label sync-error" :title="syncError">no se pudo guardar el estado</span>
+      <span v-else class="stamp label">
         {{ loading ? "buscando…" : lastUpdated ? `últ. lectura ${lastUpdated.toLocaleTimeString()}` : "sin leer" }}
       </span>
       <button type="button" class="ghost" @click="emit('refresh')">Actualizar</button>
@@ -111,6 +113,10 @@ const emit = defineEmits<{ refresh: []; toggleTheme: [] }>();
 }
 .stamp {
   color: var(--ink-3);
+}
+.sync-error {
+  color: var(--urgent);
+  cursor: help;
 }
 .ghost {
   font: inherit;

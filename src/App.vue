@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { SupabaseDealsRepository } from "./infrastructure/SupabaseDealsRepository";
+import { SupabaseSeenRepository } from "./infrastructure/SupabaseSeenRepository";
 import { useDeals } from "./composables/useDeals";
 import { useClock } from "./composables/useClock";
 import { useTheme } from "./composables/useTheme";
@@ -21,7 +22,7 @@ const misconfigured = !supabaseUrl || !anonKey;
 // Composition root del frontend: acá (y solo acá) se elige la implementación
 // concreta del repositorio. El resto de la app solo conoce DealsRepository.
 const repository = new SupabaseDealsRepository(supabaseUrl, anonKey);
-const { isSeen, markSeen, toggleSeen } = useSeenDeals();
+const { isSeen, markSeen, toggleSeen, syncError } = useSeenDeals(new SupabaseSeenRepository(supabaseUrl, anonKey));
 const { loading, error, lastUpdated, view, format, sortBy, query, visibleDeals, counts, reload } = useDeals(
   repository,
   isSeen,
@@ -49,7 +50,14 @@ const emptyHint = computed(() => {
   </div>
 
   <template v-else>
-    <DeskHeader :counts="counts" :last-updated="lastUpdated" :loading="loading" @refresh="reload" @toggle-theme="toggleTheme" />
+    <DeskHeader
+      :counts="counts"
+      :last-updated="lastUpdated"
+      :loading="loading"
+      :sync-error="syncError"
+      @refresh="reload"
+      @toggle-theme="toggleTheme"
+    />
 
     <Toolbar
       v-model:view="view"
