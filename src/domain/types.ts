@@ -16,6 +16,7 @@ export interface Deal {
   cpuMatch: string | null;
   score: number | null;
   isGreatDeal: boolean;
+  isPriority: boolean;
   hasDescription: boolean;
   hasBatteryInfo: boolean;
   batteryGrade: string | null;

@@ -60,6 +60,10 @@ export function useDeals(repository: DealsRepository, isSeen: (itemId: string) =
         const bEnd = b.endDate ? new Date(b.endDate).getTime() : Infinity;
         return aEnd - bEnd;
       }
+      // Orden por defecto: las CPUs prioritarias arriba de todo, y dentro de
+      // cada grupo por puntaje. Los otros órdenes se respetan tal cual: si
+      // pediste por precio, querés ver el precio, no la prioridad.
+      if (a.isPriority !== b.isPriority) return a.isPriority ? -1 : 1;
       return (b.score ?? 0) - (a.score ?? 0);
     });
   });

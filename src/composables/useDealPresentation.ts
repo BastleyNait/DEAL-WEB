@@ -13,11 +13,11 @@ export function useDealPresentation(
   budget: MaybeRefOrGetter<number>,
   now: MaybeRefOrGetter<number>,
 ) {
+  // Sin la CPU: los componentes la muestran aparte para poder resaltarla
+  // cuando es una de las prioritarias.
   const specs = computed(() => {
     const d = toValue(deal);
-    return [d.cpuMatch, ramLabel(d.title), storageLabel(d.title), screenLabel(d.title)].filter(
-      (s): s is string => Boolean(s),
-    );
+    return [ramLabel(d.title), storageLabel(d.title), screenLabel(d.title)].filter((s): s is string => Boolean(s));
   });
 
   const flags = computed(() => reviewFlags(toValue(deal)));

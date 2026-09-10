@@ -9,6 +9,7 @@ interface DealRow {
   cpu_match: string | null;
   score: number | null;
   is_great_deal: boolean;
+  is_priority: boolean;
   has_description: boolean;
   has_battery_info: boolean;
   battery_grade: string | null;
@@ -36,6 +37,7 @@ function toDeal(row: DealRow): Deal {
     cpuMatch: row.cpu_match,
     score: row.score,
     isGreatDeal: row.is_great_deal,
+    isPriority: row.is_priority,
     hasDescription: row.has_description,
     hasBatteryInfo: row.has_battery_info,
     batteryGrade: row.battery_grade,

@@ -42,6 +42,9 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useD
         <h3 class="title">{{ deal.title }}</h3>
 
         <div class="specs">
+          <span v-if="deal.cpuMatch" class="spec" :class="{ 'spec-priority': deal.isPriority }">
+            {{ deal.isPriority ? "★ " : "" }}{{ deal.cpuMatch }}
+          </span>
           <span v-for="spec in specs" :key="spec" class="spec">{{ spec }}</span>
           <span v-if="deal.condition" class="spec spec-condition">{{ deal.condition }}</span>
         </div>
@@ -231,6 +234,13 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useD
 .spec-condition {
   background: transparent;
   border: 1px solid var(--rule);
+}
+/* La prioridad es la CPU, así que se resalta el chip de la CPU en vez de
+   agregar otra insignia que compita con las que ya están. */
+.spec-priority {
+  color: var(--link);
+  background: var(--link-soft);
+  font-weight: 500;
 }
 
 .flags {

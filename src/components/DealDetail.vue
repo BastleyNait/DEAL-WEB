@@ -56,6 +56,7 @@ onUnmounted(() => {
         <div class="head-main">
           <h2>{{ deal.title }}</h2>
           <div class="badges">
+            <span v-if="deal.isPriority" class="badge link">★ CPU prioritaria</span>
             <span v-if="deal.isGreatDeal" class="badge good">Ofertaza</span>
             <span v-if="deal.isAuction" class="badge">Subasta</span>
             <span v-else-if="deal.hasBestOffer" class="badge link">Acepta oferta</span>
@@ -122,6 +123,9 @@ onUnmounted(() => {
           </dl>
 
           <div class="specs">
+            <span v-if="deal.cpuMatch" class="spec" :class="{ 'spec-priority': deal.isPriority }">
+              {{ deal.cpuMatch }}
+            </span>
             <span v-for="spec in specs" :key="spec" class="spec">{{ spec }}</span>
           </div>
 
@@ -385,6 +389,11 @@ onUnmounted(() => {
   background: var(--surface-sunk);
   border-radius: 4px;
   padding: 2px 7px;
+}
+.spec-priority {
+  color: var(--link);
+  background: var(--link-soft);
+  font-weight: 500;
 }
 
 .aspects h3,
