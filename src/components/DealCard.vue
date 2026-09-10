@@ -4,7 +4,7 @@ import { brandInitials } from "../domain/listing-specs";
 import { useDealPresentation } from "../composables/useDealPresentation";
 
 const props = defineProps<{ deal: Deal; budget: number; now: number; seen: boolean }>();
-const emit = defineEmits<{ open: [string]; toggleSeen: [string] }>();
+const emit = defineEmits<{ open: [Deal]; toggleSeen: [string] }>();
 
 const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useDealPresentation(
   () => props.deal,
@@ -15,13 +15,11 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useD
 
 <template>
   <div class="wrap" :class="{ seen }">
-    <a
+    <button
+      type="button"
       class="card"
       :class="{ 'is-great': deal.isGreatDeal, 'needs-review': flags.length > 0 }"
-      :href="deal.url"
-      target="_blank"
-      rel="noopener noreferrer"
-      @click="emit('open', deal.itemId)"
+      @click="emit('open', deal)"
     >
       <div class="shot">
         <img v-if="deal.imageUrl" :src="deal.imageUrl" loading="lazy" alt="" />
@@ -67,9 +65,9 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useD
           <span class="label">hace {{ seenAgo }}</span>
         </div>
       </div>
-    </a>
+    </button>
 
-    <!-- Fuera del <a> porque no se puede anidar un botón dentro de un enlace. -->
+    <!-- Fuera de la tarjeta para que no dispare también la apertura del detalle. -->
     <button
       type="button"
       class="seen-toggle"
@@ -100,13 +98,16 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useD
   display: flex;
   flex-direction: column;
   width: 100%;
+  padding: 0;
+  font: inherit;
+  text-align: left;
   background: var(--surface);
   border: 1px solid var(--rule);
   border-top: 3px solid var(--rule-strong);
   border-radius: 8px;
   overflow: hidden;
-  text-decoration: none;
   color: inherit;
+  cursor: pointer;
   box-shadow: var(--shadow-row);
   transition: border-color 0.12s ease, transform 0.12s ease, opacity 0.12s ease;
 }

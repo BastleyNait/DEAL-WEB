@@ -13,7 +13,7 @@ defineProps<{
   emptyHint: string;
 }>();
 
-const emit = defineEmits<{ open: [string]; toggleSeen: [string] }>();
+const emit = defineEmits<{ open: [Deal]; toggleSeen: [string] }>();
 </script>
 
 <template>

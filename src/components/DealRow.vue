@@ -4,7 +4,7 @@ import { brandInitials } from "../domain/listing-specs";
 import { useDealPresentation } from "../composables/useDealPresentation";
 
 const props = defineProps<{ deal: Deal; budget: number; now: number; seen: boolean }>();
-const emit = defineEmits<{ open: [string]; toggleSeen: [string] }>();
+const emit = defineEmits<{ open: [Deal]; toggleSeen: [string] }>();
 
 const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useDealPresentation(
   () => props.deal,
@@ -15,13 +15,11 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useD
 
 <template>
   <div class="wrap" :class="{ seen }">
-    <a
+    <button
+      type="button"
       class="row"
       :class="{ 'is-great': deal.isGreatDeal, 'needs-review': flags.length > 0 }"
-      :href="deal.url"
-      target="_blank"
-      rel="noopener noreferrer"
-      @click="emit('open', deal.itemId)"
+      @click="emit('open', deal)"
     >
       <span class="stripe" aria-hidden="true"></span>
 
@@ -61,9 +59,9 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useD
         <span v-if="seller" class="seller mono" :title="deal.sellerUsername ?? ''">{{ seller }}</span>
         <span class="label">vista hace {{ seenAgo }}</span>
       </div>
-    </a>
+    </button>
 
-    <!-- Fuera del <a> porque no se puede anidar un botón dentro de un enlace. -->
+    <!-- Fuera de la fila para que no dispare también la apertura del detalle. -->
     <button
       type="button"
       class="seen-toggle"
@@ -94,13 +92,16 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useD
   grid-template-columns: 4px 68px minmax(0, 1fr) 132px 52px 108px;
   align-items: center;
   gap: 16px;
+  width: 100%;
   padding: 12px 74px 12px 0;
+  font: inherit;
+  text-align: left;
   background: var(--surface);
   border: 1px solid var(--rule);
   border-radius: 8px;
   box-shadow: var(--shadow-row);
-  text-decoration: none;
   color: inherit;
+  cursor: pointer;
   transition: border-color 0.12s ease, transform 0.12s ease, opacity 0.12s ease;
 }
 .row:hover {

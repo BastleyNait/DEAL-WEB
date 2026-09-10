@@ -2,6 +2,11 @@
 // (Dependency Inversion) — así se puede cambiar de backend o mockear en tests
 // sin tocar componentes ni composables.
 
+export interface ListingAspect {
+  name: string;
+  value: string;
+}
+
 export interface Deal {
   itemId: string;
   title: string;
@@ -20,6 +25,9 @@ export interface Deal {
   sellerUsername: string | null;
   sellerFeedbackScore: number | null;
   sellerFeedbackPercentage: number | null;
+  sellerDescription: string | null;
+  aspects: ListingAspect[];
+  additionalImages: string[];
   url: string;
   imageUrl: string | null;
   firstSeenAt: string;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { SupabaseDealsRepository } from "./infrastructure/SupabaseDealsRepository";
 import { SupabaseSeenRepository } from "./infrastructure/SupabaseSeenRepository";
 import { useDeals } from "./composables/useDeals";
@@ -10,6 +10,8 @@ import { useSeenDeals } from "./composables/useSeenDeals";
 import DeskHeader from "./components/DeskHeader.vue";
 import Toolbar from "./components/Toolbar.vue";
 import DealList from "./components/DealList.vue";
+import DealDetail from "./components/DealDetail.vue";
+import type { Deal } from "./domain/types";
 
 // Tope de presupuesto del backend (search_config.maxPriceUsd): cada precio se
 // muestra en relación a este límite, que es la regla real de compra.
@@ -30,6 +32,19 @@ const { loading, error, lastUpdated, view, format, sortBy, query, visibleDeals, 
 const now = useClock();
 const { toggle: toggleTheme } = useTheme();
 const { layout, columns } = useLayout();
+
+// Abrir el detalle cuenta como haberla revisado.
+const openedDeal = ref<Deal | null>(null);
+function openDeal(deal: Deal) {
+  openedDeal.value = deal;
+  markSeen(deal.itemId);
+}
+
+// La oferta abierta se vuelve a leer de la lista en cada refresco, para que el
+// modal no quede mostrando un precio viejo mientras está abierto.
+const detailDeal = computed(() =>
+  openedDeal.value ? (visibleDeals.value.find((d) => d.itemId === openedDeal.value!.itemId) ?? openedDeal.value) : null,
+);
 
 const emptyHint = computed(() => {
   if (query.value.trim()) return `Ningún equipo coincide con “${query.value.trim()}”.`;
@@ -86,10 +101,20 @@ const emptyHint = computed(() => {
         :columns="columns"
         :is-seen="isSeen"
         :empty-hint="emptyHint"
-        @open="markSeen"
+        @open="openDeal"
         @toggle-seen="toggleSeen"
       />
     </main>
+
+    <DealDetail
+      v-if="detailDeal"
+      :deal="detailDeal"
+      :budget="BUDGET_USD"
+      :now="now"
+      :seen="isSeen(detailDeal.itemId)"
+      @close="openedDeal = null"
+      @toggle-seen="toggleSeen"
+    />
   </template>
 </template>
 

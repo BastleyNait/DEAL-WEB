@@ -1,4 +1,4 @@
-import type { Deal, DealsRepository } from "../domain/types";
+import type { Deal, DealsRepository, ListingAspect } from "../domain/types";
 
 interface DealRow {
   item_id: string;
@@ -18,6 +18,9 @@ interface DealRow {
   seller_username: string | null;
   seller_feedback_score: number | null;
   seller_feedback_percentage: number | null;
+  seller_description: string | null;
+  aspects: ListingAspect[] | null;
+  additional_images: string[] | null;
   url: string;
   image_url: string | null;
   first_seen_at: string;
@@ -42,6 +45,9 @@ function toDeal(row: DealRow): Deal {
     sellerUsername: row.seller_username,
     sellerFeedbackScore: row.seller_feedback_score,
     sellerFeedbackPercentage: row.seller_feedback_percentage,
+    sellerDescription: row.seller_description,
+    aspects: row.aspects ?? [],
+    additionalImages: row.additional_images ?? [],
     url: row.url,
     imageUrl: row.image_url,
     firstSeenAt: row.first_seen_at,
