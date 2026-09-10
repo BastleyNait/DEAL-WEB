@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import type { DealSortBy, DealView } from "../domain/types";
+import type { DealFormat, DealSortBy, DealView } from "../domain/types";
 
 const view = defineModel<DealView>("view", { required: true });
+const format = defineModel<DealFormat>("format", { required: true });
 const sortBy = defineModel<DealSortBy>("sortBy", { required: true });
 const query = defineModel<string>("query", { required: true });
 
 defineProps<{
-  counts: { all: number; great: number; review: number };
+  counts: { all: number; great: number; review: number; auction: number; offer: number; fixed: number };
   shown: number;
 }>();
 
@@ -35,6 +36,16 @@ const VIEWS: { id: DealView; label: string }[] = [
     </div>
 
     <input v-model="query" type="search" class="search" placeholder="Filtrar por modelo o CPU…" />
+
+    <label class="sort">
+      <span class="label">formato</span>
+      <select v-model="format">
+        <option value="any">Todos</option>
+        <option value="auction">Subasta ({{ counts.auction }})</option>
+        <option value="offer">Acepta oferta ({{ counts.offer }})</option>
+        <option value="fixed">Precio fijo ({{ counts.fixed }})</option>
+      </select>
+    </label>
 
     <label class="sort">
       <span class="label">orden</span>

@@ -42,6 +42,17 @@ const countdown = computed(() => {
   return { text, urgent: hours < 6, over: false };
 });
 
+// Reputación del vendedor: el backend ya descarta por debajo del umbral, pero
+// verla ayuda a decidir entre dos ofertas parecidas.
+const seller = computed(() => {
+  const score = props.deal.sellerFeedbackScore;
+  const pct = props.deal.sellerFeedbackPercentage;
+  if (score === null && pct === null) return null;
+  const sales = score !== null ? `${score.toLocaleString("es")} ventas` : "";
+  const rating = pct !== null ? `${pct}%` : "";
+  return [sales, rating].filter(Boolean).join(" · ");
+});
+
 const seenAgo = computed(() => {
   const minutes = Math.floor((props.now - new Date(props.deal.firstSeenAt).getTime()) / 60_000);
   if (minutes < 1) return "recién";
@@ -80,6 +91,7 @@ const seenAgo = computed(() => {
       <div class="price mono">
         <span class="currency">$</span>{{ Math.round(deal.price ?? 0) }}
         <span v-if="deal.isAuction" class="price-note">puja actual</span>
+        <span v-else-if="deal.hasBestOffer" class="price-note negotiable">acepta oferta</span>
       </div>
       <div class="budget" :class="{ over: overBudget }">
         <span class="budget-fill" :style="{ width: `${budgetFill}%` }"></span>
@@ -99,6 +111,7 @@ const seenAgo = computed(() => {
         {{ countdown.over ? "cerrada" : `cierra en ${countdown.text}` }}
       </span>
       <span v-else-if="deal.isAuction" class="countdown mono">subasta</span>
+      <span v-if="seller" class="seller mono" :title="deal.sellerUsername ?? ''">{{ seller }}</span>
       <span class="seen label">vista hace {{ seenAgo }}</span>
     </div>
   </a>
@@ -219,6 +232,14 @@ const seenAgo = computed(() => {
   font-size: 10.5px;
   font-weight: 400;
   color: var(--ink-3);
+}
+.price-note.negotiable {
+  color: var(--link);
+}
+.seller {
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
 }
 .budget {
   height: 3px;

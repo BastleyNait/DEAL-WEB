@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineProps<{
-  counts: { all: number; great: number; review: number; auctions: number; cheapest: number | null };
+  counts: { all: number; great: number; review: number; auction: number; cheapest: number | null };
   lastUpdated: Date | null;
   loading: boolean;
 }>();
@@ -34,7 +34,7 @@ const emit = defineEmits<{ refresh: []; toggleTheme: [] }>();
       </div>
       <div>
         <dt class="label">subastas</dt>
-        <dd class="mono">{{ counts.auctions }}</dd>
+        <dd class="mono">{{ counts.auction }}</dd>
       </div>
       <div>
         <dt class="label">más barata</dt>

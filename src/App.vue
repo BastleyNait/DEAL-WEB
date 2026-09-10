@@ -19,7 +19,7 @@ const misconfigured = !supabaseUrl || !anonKey;
 // Composition root del frontend: acá (y solo acá) se elige la implementación
 // concreta del repositorio. El resto de la app solo conoce DealsRepository.
 const repository = new SupabaseDealsRepository(supabaseUrl, anonKey);
-const { loading, error, lastUpdated, view, sortBy, query, visibleDeals, counts, reload } = useDeals(repository);
+const { loading, error, lastUpdated, view, format, sortBy, query, visibleDeals, counts, reload } = useDeals(repository);
 const now = useClock();
 const { toggle: toggleTheme } = useTheme();
 
@@ -45,6 +45,7 @@ const emptyHint = computed(() => {
 
     <Toolbar
       v-model:view="view"
+      v-model:format="format"
       v-model:sort-by="sortBy"
       v-model:query="query"
       :counts="counts"

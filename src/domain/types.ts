@@ -15,7 +15,11 @@ export interface Deal {
   hasBatteryInfo: boolean;
   batteryGrade: string | null;
   isAuction: boolean;
+  hasBestOffer: boolean;
   endDate: string | null;
+  sellerUsername: string | null;
+  sellerFeedbackScore: number | null;
+  sellerFeedbackPercentage: number | null;
   url: string;
   imageUrl: string | null;
   firstSeenAt: string;
@@ -24,6 +28,15 @@ export interface Deal {
 export type DealSortBy = "score" | "price" | "date" | "ending";
 
 export type DealView = "all" | "great" | "review";
+
+/** Cómo se compra: cada formato se negocia distinto, por eso se filtran aparte. */
+export type DealFormat = "any" | "auction" | "offer" | "fixed";
+
+export function dealFormat(deal: Deal): Exclude<DealFormat, "any"> {
+  if (deal.isAuction) return "auction";
+  if (deal.hasBestOffer) return "offer";
+  return "fixed";
+}
 
 export interface DealsRepository {
   listDeals(): Promise<Deal[]>;

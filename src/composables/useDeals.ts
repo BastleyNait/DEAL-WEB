@@ -1,6 +1,6 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import type { Deal, DealsRepository, DealSortBy, DealView } from "../domain/types";
-import { needsReview } from "../domain/types";
+import type { Deal, DealFormat, DealsRepository, DealSortBy, DealView } from "../domain/types";
+import { dealFormat, needsReview } from "../domain/types";
 
 const AUTO_REFRESH_MS = 60_000;
 
@@ -17,6 +17,7 @@ export function useDeals(repository: DealsRepository) {
   const lastUpdated = ref<Date | null>(null);
 
   const view = ref<DealView>("all");
+  const format = ref<DealFormat>("any");
   const sortBy = ref<DealSortBy>("score");
   const query = ref("");
 
@@ -39,6 +40,7 @@ export function useDeals(repository: DealsRepository) {
 
     if (view.value === "great") list = list.filter((d) => d.isGreatDeal);
     if (view.value === "review") list = list.filter(needsReview);
+    if (format.value !== "any") list = list.filter((d) => dealFormat(d) === format.value);
 
     const term = query.value.trim().toLowerCase();
     if (term) {
@@ -64,7 +66,9 @@ export function useDeals(repository: DealsRepository) {
     all: deals.value.length,
     great: deals.value.filter((d) => d.isGreatDeal).length,
     review: deals.value.filter(needsReview).length,
-    auctions: deals.value.filter((d) => d.isAuction).length,
+    auction: deals.value.filter((d) => dealFormat(d) === "auction").length,
+    offer: deals.value.filter((d) => dealFormat(d) === "offer").length,
+    fixed: deals.value.filter((d) => dealFormat(d) === "fixed").length,
     cheapest: deals.value.reduce<number | null>(
       (min, d) => (d.price != null && (min === null || d.price < min) ? d.price : min),
       null,
@@ -80,5 +84,5 @@ export function useDeals(repository: DealsRepository) {
     if (intervalId) clearInterval(intervalId);
   });
 
-  return { deals, loading, error, lastUpdated, view, sortBy, query, visibleDeals, counts, reload: load };
+  return { deals, loading, error, lastUpdated, view, format, sortBy, query, visibleDeals, counts, reload: load };
 }
