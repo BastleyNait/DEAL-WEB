@@ -2,6 +2,7 @@
 import type { DealSortBy } from "../domain/types";
 
 const onlyGreat = defineModel<boolean>("onlyGreat", { required: true });
+const onlyNeedsReview = defineModel<boolean>("onlyNeedsReview", { required: true });
 const sortBy = defineModel<DealSortBy>("sortBy", { required: true });
 
 defineProps<{
@@ -16,6 +17,10 @@ const emit = defineEmits<{ refresh: [] }>();
     <label>
       <input type="checkbox" v-model="onlyGreat" />
       Solo ofertazas (⚡ &lt;$160 o puntaje alto)
+    </label>
+    <label>
+      <input type="checkbox" v-model="onlyNeedsReview" />
+      ⚠️ Solo a revisar (sin descripción/batería)
     </label>
     <label>
       Ordenar por

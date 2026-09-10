@@ -1,5 +1,6 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import type { Deal, DealsRepository, DealSortBy } from "../domain/types";
+import { needsBatteryGradeReview } from "../domain/types";
 
 const AUTO_REFRESH_MS = 60_000;
 
@@ -16,6 +17,7 @@ export function useDeals(repository: DealsRepository) {
   const lastUpdated = ref<Date | null>(null);
 
   const onlyGreatDeals = ref(false);
+  const onlyNeedsReview = ref(false);
   const sortBy = ref<DealSortBy>("score");
 
   let intervalId: ReturnType<typeof setInterval> | undefined;
@@ -35,6 +37,9 @@ export function useDeals(repository: DealsRepository) {
   const visibleDeals = computed(() => {
     let list = deals.value;
     if (onlyGreatDeals.value) list = list.filter((d) => d.isGreatDeal);
+    if (onlyNeedsReview.value) {
+      list = list.filter((d) => !d.hasDescription || !d.hasBatteryInfo || needsBatteryGradeReview(d.batteryGrade));
+    }
 
     return [...list].sort((a, b) => {
       if (sortBy.value === "price") return (a.price ?? Infinity) - (b.price ?? Infinity);
@@ -60,5 +65,5 @@ export function useDeals(repository: DealsRepository) {
     if (intervalId) clearInterval(intervalId);
   });
 
-  return { loading, error, lastUpdated, onlyGreatDeals, sortBy, visibleDeals, stats, reload: load };
+  return { loading, error, lastUpdated, onlyGreatDeals, onlyNeedsReview, sortBy, visibleDeals, stats, reload: load };
 }

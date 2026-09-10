@@ -12,7 +12,7 @@ const misconfigured = !supabaseUrl || !anonKey;
 // Composition root del frontend: acá (y solo acá) se elige la implementación
 // concreta del repositorio. El resto de la app solo conoce DealsRepository.
 const repository = new SupabaseDealsRepository(supabaseUrl, anonKey);
-const { loading, error, lastUpdated, onlyGreatDeals, sortBy, visibleDeals, stats, reload } = useDeals(repository);
+const { loading, error, lastUpdated, onlyGreatDeals, onlyNeedsReview, sortBy, visibleDeals, stats, reload } = useDeals(repository);
 </script>
 
 <template>
@@ -28,7 +28,13 @@ const { loading, error, lastUpdated, onlyGreatDeals, sortBy, visibleDeals, stats
 
   <template v-else>
     <StatsBar :total="stats.total" :great="stats.great" :avg-price="stats.avgPrice" />
-    <FilterBar v-model:only-great="onlyGreatDeals" v-model:sort-by="sortBy" :last-updated="lastUpdated" @refresh="reload" />
+    <FilterBar
+      v-model:only-great="onlyGreatDeals"
+      v-model:only-needs-review="onlyNeedsReview"
+      v-model:sort-by="sortBy"
+      :last-updated="lastUpdated"
+      @refresh="reload"
+    />
 
     <div v-if="error" id="error" style="display: block">
       No se pudo conectar a Supabase: {{ error }}

@@ -1,7 +1,17 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import type { Deal } from "../domain/types";
+import { needsBatteryGradeReview } from "../domain/types";
 
 const props = defineProps<{ deal: Deal }>();
+
+const missingInfo = computed(() => {
+  const missing: string[] = [];
+  if (!props.deal.hasDescription) missing.push("sin descripción");
+  if (!props.deal.hasBatteryInfo) missing.push("sin dato de batería");
+  if (needsBatteryGradeReview(props.deal.batteryGrade)) missing.push(`batería grado ${props.deal.batteryGrade}`);
+  return missing;
+});
 
 function timeAgo(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -22,18 +32,26 @@ function timeAgo(iso: string): string {
     <div class="card-body">
       <div class="badges">
         <span v-if="props.deal.isGreatDeal" class="badge great">⚡ Ofertaza</span>
+        <span v-if="props.deal.isAuction" class="badge auction">🔨 Subasta</span>
         <span v-if="props.deal.cpuMatch" class="badge">{{ props.deal.cpuMatch }}</span>
         <span v-if="props.deal.condition" class="badge">{{ props.deal.condition }}</span>
       </div>
 
       <div class="title">{{ props.deal.title }}</div>
-      <div class="price">${{ Math.round(props.deal.price ?? 0) }} {{ props.deal.currency }}</div>
+      <div class="price">
+        ${{ Math.round(props.deal.price ?? 0) }} {{ props.deal.currency }}
+        <span v-if="props.deal.isAuction" class="price-note">(actual)</span>
+      </div>
 
       <div class="score-bar"><div :style="{ width: `${props.deal.score ?? 0}%` }"></div></div>
 
       <div class="meta">
         <span>Puntaje {{ props.deal.score ?? "?" }}/100</span>
         <span>{{ timeAgo(props.deal.firstSeenAt) }}</span>
+      </div>
+
+      <div v-if="missingInfo.length > 0" class="review-note">
+        ⚠️ {{ missingInfo.join(" · ") }} — revisar a mano
       </div>
     </div>
   </a>
@@ -90,6 +108,16 @@ function timeAgo(iso: string): string {
   color: var(--great);
   border-color: var(--great);
 }
+.badge.auction {
+  background: rgba(255, 107, 53, 0.15);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.price-note {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+}
 .title {
   font-size: 14px;
   line-height: 1.3;
@@ -116,5 +144,13 @@ function timeAgo(iso: string): string {
 .score-bar > div {
   height: 100%;
   background: var(--accent);
+}
+.review-note {
+  font-size: 11px;
+  color: var(--great);
+  background: rgba(255, 176, 32, 0.1);
+  border: 1px solid rgba(255, 176, 32, 0.3);
+  border-radius: 6px;
+  padding: 4px 8px;
 }
 </style>
