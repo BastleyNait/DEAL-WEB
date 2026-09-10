@@ -1,13 +1,85 @@
+/*
+ * Sistema de tokens. El tema claro completo se define en :root; el oscuro solo
+ * redefine tokens, nunca componentes, para que ningún color quede atado a un
+ * solo tema. Neutros con sesgo frío (elegidos, no un gris medio por defecto).
+ */
 :root {
-  --bg: #0f1115;
-  --panel: #171a21;
-  --panel-2: #1f232c;
-  --text: #e8eaed;
-  --muted: #9aa1ac;
-  --accent: #ff6b35;
-  --great: #ffb020;
-  --good: #4caf7d;
-  --border: #2a2f3a;
+  color-scheme: light;
+
+  --paper: #f5f7fa;
+  --surface: #ffffff;
+  --surface-sunk: #eef2f7;
+  --ink: #111820;
+  --ink-2: #59657a;
+  --ink-3: #8a97ab;
+  --rule: #e1e7ef;
+  --rule-strong: #cdd6e2;
+
+  /* Único color interactivo: enlaces, foco, controles activos. */
+  --link: #2b4acb;
+  --link-soft: #e8ecfb;
+
+  /* Semánticos: cada uno significa exactamente una cosa. */
+  --good: #0c7a4d;
+  --good-soft: #e2f4eb;
+  --warn: #a2650c;
+  --warn-soft: #fbf0dc;
+  --urgent: #c0400f;
+  --urgent-soft: #fceae2;
+
+  --shadow-row: 0 1px 2px rgba(17, 24, 32, 0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --paper: #12161c;
+    --surface: #182029;
+    --surface-sunk: #10151b;
+    --ink: #e6edf5;
+    --ink-2: #93a1b5;
+    --ink-3: #6a7789;
+    --rule: #263140;
+    --rule-strong: #354357;
+
+    --link: #86a5ff;
+    --link-soft: #1d2740;
+
+    --good: #3fcb8e;
+    --good-soft: #12281f;
+    --warn: #e3a93f;
+    --warn-soft: #2a2114;
+    --urgent: #ff7b4a;
+    --urgent-soft: #2d1a13;
+
+    --shadow-row: 0 1px 2px rgba(0, 0, 0, 0.35);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --paper: #12161c;
+  --surface: #182029;
+  --surface-sunk: #10151b;
+  --ink: #e6edf5;
+  --ink-2: #93a1b5;
+  --ink-3: #6a7789;
+  --rule: #263140;
+  --rule-strong: #354357;
+
+  --link: #86a5ff;
+  --link-soft: #1d2740;
+
+  --good: #3fcb8e;
+  --good-soft: #12281f;
+  --warn: #e3a93f;
+  --warn-soft: #2a2114;
+  --urgent: #ff7b4a;
+  --urgent-soft: #2d1a13;
+
+  --shadow-row: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 * {
@@ -16,13 +88,41 @@
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
 }
 
-code {
-  background: var(--panel-2);
-  padding: 1px 5px;
-  border-radius: 4px;
+/* Los números se leen en columna: precios, puntajes, cuentas regresivas. */
+.mono {
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.label {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+a {
+  color: var(--link);
+}
+
+:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }

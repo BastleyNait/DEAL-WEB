@@ -15,12 +15,15 @@ export interface Deal {
   hasBatteryInfo: boolean;
   batteryGrade: string | null;
   isAuction: boolean;
+  endDate: string | null;
   url: string;
   imageUrl: string | null;
   firstSeenAt: string;
 }
 
-export type DealSortBy = "score" | "price" | "date";
+export type DealSortBy = "score" | "price" | "date" | "ending";
+
+export type DealView = "all" | "great" | "review";
 
 export interface DealsRepository {
   listDeals(): Promise<Deal[]>;
@@ -32,4 +35,17 @@ const GRADES_TO_REVIEW = new Set(["C", "D", "F"]);
 
 export function needsBatteryGradeReview(grade: string | null): boolean {
   return grade !== null && GRADES_TO_REVIEW.has(grade);
+}
+
+/** Motivos por los que conviene mirar la publicación antes de comprar. */
+export function reviewFlags(deal: Deal): string[] {
+  const flags: string[] = [];
+  if (!deal.hasDescription) flags.push("sin descripción");
+  if (!deal.hasBatteryInfo) flags.push("sin dato de batería");
+  if (needsBatteryGradeReview(deal.batteryGrade)) flags.push(`batería grado ${deal.batteryGrade}`);
+  return flags;
+}
+
+export function needsReview(deal: Deal): boolean {
+  return reviewFlags(deal).length > 0;
 }

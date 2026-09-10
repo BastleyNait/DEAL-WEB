@@ -1,9 +1,16 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { SupabaseDealsRepository } from "./infrastructure/SupabaseDealsRepository";
 import { useDeals } from "./composables/useDeals";
-import StatsBar from "./components/StatsBar.vue";
-import FilterBar from "./components/FilterBar.vue";
-import DealGrid from "./components/DealGrid.vue";
+import { useClock } from "./composables/useClock";
+import { useTheme } from "./composables/useTheme";
+import DeskHeader from "./components/DeskHeader.vue";
+import Toolbar from "./components/Toolbar.vue";
+import DealList from "./components/DealList.vue";
+
+// Tope de presupuesto del backend (search_config.maxPriceUsd): cada precio se
+// muestra en relación a este límite, que es la regla real de compra.
+const BUDGET_USD = 200;
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -12,63 +19,103 @@ const misconfigured = !supabaseUrl || !anonKey;
 // Composition root del frontend: acá (y solo acá) se elige la implementación
 // concreta del repositorio. El resto de la app solo conoce DealsRepository.
 const repository = new SupabaseDealsRepository(supabaseUrl, anonKey);
-const { loading, error, lastUpdated, onlyGreatDeals, onlyNeedsReview, sortBy, visibleDeals, stats, reload } = useDeals(repository);
+const { loading, error, lastUpdated, view, sortBy, query, visibleDeals, counts, reload } = useDeals(repository);
+const now = useClock();
+const { toggle: toggleTheme } = useTheme();
+
+const emptyHint = computed(() => {
+  if (query.value.trim()) return `Ningún equipo coincide con “${query.value.trim()}”.`;
+  if (view.value === "great") return "Todavía no apareció ninguna por debajo de $160 ni con puntaje alto.";
+  if (view.value === "review") return "Ninguna oferta quedó con datos faltantes: todas traen descripción y batería.";
+  return "El cazador todavía no guardó ofertas. Corré la función hunt-deals o esperá al próximo barrido.";
+});
 </script>
 
 <template>
-  <header>
-    <h1>🎯 Deal Hunter — Revolt Laptops</h1>
-    <p>Laptops i7 10/11va, i5 11/12va, Ryzen 5 5000, Ryzen 7 4000 — bajo $200 y sin fallas de batería/almacenamiento.</p>
-  </header>
-
-  <div v-if="misconfigured" id="error" style="display: block">
-    Faltan <code>VITE_SUPABASE_URL</code> / <code>VITE_SUPABASE_ANON_KEY</code>. Copiá
-    <code>.env.example</code> a <code>.env</code> y completá los valores de tu proyecto de Supabase.
+  <div v-if="misconfigured" class="notice">
+    <h1>Falta conectar el backend</h1>
+    <p>
+      Copiá <code>.env.example</code> a <code>.env</code> y completá <code>VITE_SUPABASE_URL</code> y
+      <code>VITE_SUPABASE_ANON_KEY</code> con los datos de tu proyecto de Supabase.
+    </p>
   </div>
 
   <template v-else>
-    <StatsBar :total="stats.total" :great="stats.great" :avg-price="stats.avgPrice" />
-    <FilterBar
-      v-model:only-great="onlyGreatDeals"
-      v-model:only-needs-review="onlyNeedsReview"
+    <DeskHeader :counts="counts" :last-updated="lastUpdated" :loading="loading" @refresh="reload" @toggle-theme="toggleTheme" />
+
+    <Toolbar
+      v-model:view="view"
       v-model:sort-by="sortBy"
-      :last-updated="lastUpdated"
-      @refresh="reload"
+      v-model:query="query"
+      :counts="counts"
+      :shown="visibleDeals.length"
     />
 
-    <div v-if="error" id="error" style="display: block">
-      No se pudo conectar a Supabase: {{ error }}
-    </div>
-    <div v-else-if="loading" id="empty">Cargando ofertas...</div>
-    <DealGrid v-else :deals="visibleDeals" />
+    <main>
+      <div v-if="error" class="notice error">
+        <h2>No se pudo leer el backend</h2>
+        <p>{{ error }}</p>
+        <button type="button" @click="reload">Reintentar</button>
+      </div>
+      <p v-else-if="loading && visibleDeals.length === 0" class="loading label">leyendo ofertas…</p>
+      <DealList v-else :deals="visibleDeals" :budget="BUDGET_USD" :now="now" :empty-hint="emptyHint" />
+    </main>
   </template>
 </template>
 
 <style scoped>
-header {
-  padding: 24px 20px 12px;
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  background: var(--bg);
-  z-index: 5;
+main {
+  min-height: 40vh;
 }
-header h1 {
-  margin: 0 0 4px;
-  font-size: 22px;
+
+.notice {
+  max-width: 60ch;
+  margin: 56px auto;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
 }
-header p {
+.notice h1,
+.notice h2 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+.notice p {
   margin: 0;
-  color: var(--muted);
+  color: var(--ink-2);
+  font-size: 13.5px;
+}
+.notice.error {
+  border-left: 3px solid var(--urgent);
+}
+.notice button {
+  font: inherit;
   font-size: 13px;
+  margin-top: 14px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
 }
-#error {
-  padding: 20px;
-  color: #ff6b6b;
+.notice button:hover {
+  border-color: var(--link);
+  color: var(--link);
 }
-#empty {
-  padding: 40px 20px;
-  color: var(--muted);
+
+code {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12.5px;
+  background: var(--surface-sunk);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.loading {
+  padding: 56px 24px;
   text-align: center;
 }
 </style>

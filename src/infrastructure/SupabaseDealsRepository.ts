@@ -13,6 +13,7 @@ interface DealRow {
   has_battery_info: boolean;
   battery_grade: string | null;
   is_auction: boolean;
+  end_date: string | null;
   url: string;
   image_url: string | null;
   first_seen_at: string;
@@ -32,6 +33,7 @@ function toDeal(row: DealRow): Deal {
     hasBatteryInfo: row.has_battery_info,
     batteryGrade: row.battery_grade,
     isAuction: row.is_auction,
+    endDate: row.end_date,
     url: row.url,
     imageUrl: row.image_url,
     firstSeenAt: row.first_seen_at,

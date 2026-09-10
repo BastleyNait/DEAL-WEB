@@ -1,6 +1,6 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import type { Deal, DealsRepository, DealSortBy } from "../domain/types";
-import { needsBatteryGradeReview } from "../domain/types";
+import type { Deal, DealsRepository, DealSortBy, DealView } from "../domain/types";
+import { needsReview } from "../domain/types";
 
 const AUTO_REFRESH_MS = 60_000;
 
@@ -16,9 +16,9 @@ export function useDeals(repository: DealsRepository) {
   const error = ref<string | null>(null);
   const lastUpdated = ref<Date | null>(null);
 
-  const onlyGreatDeals = ref(false);
-  const onlyNeedsReview = ref(false);
+  const view = ref<DealView>("all");
   const sortBy = ref<DealSortBy>("score");
+  const query = ref("");
 
   let intervalId: ReturnType<typeof setInterval> | undefined;
 
@@ -36,25 +36,40 @@ export function useDeals(repository: DealsRepository) {
 
   const visibleDeals = computed(() => {
     let list = deals.value;
-    if (onlyGreatDeals.value) list = list.filter((d) => d.isGreatDeal);
-    if (onlyNeedsReview.value) {
-      list = list.filter((d) => !d.hasDescription || !d.hasBatteryInfo || needsBatteryGradeReview(d.batteryGrade));
+
+    if (view.value === "great") list = list.filter((d) => d.isGreatDeal);
+    if (view.value === "review") list = list.filter(needsReview);
+
+    const term = query.value.trim().toLowerCase();
+    if (term) {
+      list = list.filter(
+        (d) => d.title.toLowerCase().includes(term) || (d.cpuMatch ?? "").toLowerCase().includes(term),
+      );
     }
 
     return [...list].sort((a, b) => {
       if (sortBy.value === "price") return (a.price ?? Infinity) - (b.price ?? Infinity);
       if (sortBy.value === "date") return new Date(b.firstSeenAt).getTime() - new Date(a.firstSeenAt).getTime();
+      if (sortBy.value === "ending") {
+        // Las subastas por cerrar primero; lo que no tiene cierre va al final.
+        const aEnd = a.endDate ? new Date(a.endDate).getTime() : Infinity;
+        const bEnd = b.endDate ? new Date(b.endDate).getTime() : Infinity;
+        return aEnd - bEnd;
+      }
       return (b.score ?? 0) - (a.score ?? 0);
     });
   });
 
-  const stats = computed(() => {
-    const total = deals.value.length;
-    const great = deals.value.filter((d) => d.isGreatDeal).length;
-    const prices = deals.value.map((d) => d.price ?? 0).filter((p) => p > 0);
-    const avgPrice = prices.length ? Math.round(prices.reduce((s, p) => s + p, 0) / prices.length) : null;
-    return { total, great, avgPrice };
-  });
+  const counts = computed(() => ({
+    all: deals.value.length,
+    great: deals.value.filter((d) => d.isGreatDeal).length,
+    review: deals.value.filter(needsReview).length,
+    auctions: deals.value.filter((d) => d.isAuction).length,
+    cheapest: deals.value.reduce<number | null>(
+      (min, d) => (d.price != null && (min === null || d.price < min) ? d.price : min),
+      null,
+    ),
+  }));
 
   onMounted(() => {
     load();
@@ -65,5 +80,5 @@ export function useDeals(repository: DealsRepository) {
     if (intervalId) clearInterval(intervalId);
   });
 
-  return { loading, error, lastUpdated, onlyGreatDeals, onlyNeedsReview, sortBy, visibleDeals, stats, reload: load };
+  return { deals, loading, error, lastUpdated, view, sortBy, query, visibleDeals, counts, reload: load };
 }
