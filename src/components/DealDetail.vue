@@ -239,6 +239,7 @@ onUnmounted(() => {
 }
 
 .stage {
+  position: relative;
   aspect-ratio: 4 / 3;
   display: grid;
   place-items: center;
@@ -246,7 +247,12 @@ onUnmounted(() => {
   border-radius: 8px;
   background: var(--surface-sunk);
 }
+/* Absoluta a propósito: como ítem de grid centrado, el height:100% resuelve
+   contra una altura indefinida y la foto se muestra a tamaño real, recortada
+   por el overflow — se ve como si estuviera ampliada. */
 .stage img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
