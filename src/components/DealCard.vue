@@ -3,79 +3,103 @@ import type { Deal } from "../domain/types";
 import { brandInitials } from "../domain/listing-specs";
 import { useDealPresentation } from "../composables/useDealPresentation";
 
-const props = defineProps<{ deal: Deal; budget: number; now: number }>();
+const props = defineProps<{ deal: Deal; budget: number; now: number; seen: boolean }>();
+const emit = defineEmits<{ open: [string]; toggleSeen: [string] }>();
 
-const { specs, flags, budgetFill, overBudget, remaining, scoreTone, countdown, seller, seenAgo } =
-  useDealPresentation(
-    () => props.deal,
-    () => props.budget,
-    () => props.now,
-  );
+const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useDealPresentation(
+  () => props.deal,
+  () => props.budget,
+  () => props.now,
+);
 </script>
 
 <template>
-  <a
-    class="card"
-    :class="{ 'is-great': deal.isGreatDeal, 'needs-review': flags.length > 0 }"
-    :href="deal.url"
-    target="_blank"
-    rel="noopener noreferrer"
-  >
-    <div class="shot">
-      <img v-if="deal.imageUrl" :src="deal.imageUrl" loading="lazy" alt="" />
-      <span v-else class="shot-fallback mono">{{ brandInitials(deal.title) }}</span>
+  <div class="wrap" :class="{ seen }">
+    <a
+      class="card"
+      :class="{ 'is-great': deal.isGreatDeal, 'needs-review': flags.length > 0 }"
+      :href="deal.url"
+      target="_blank"
+      rel="noopener noreferrer"
+      @click="emit('open', deal.itemId)"
+    >
+      <div class="shot">
+        <img v-if="deal.imageUrl" :src="deal.imageUrl" loading="lazy" alt="" />
+        <span v-else class="shot-fallback mono">{{ brandInitials(deal.title) }}</span>
 
-      <!-- El cierre de una subasta es información urgente: va sobre la foto,
-           donde se ve antes que cualquier otra cosa de la tarjeta. -->
-      <span
-        v-if="countdown"
-        class="format mono"
-        :class="{ urgent: countdown.urgent, over: countdown.over }"
-      >
-        {{ countdown.over ? "cerrada" : countdown.text }}
-      </span>
-      <span v-else-if="deal.isAuction" class="format mono">subasta</span>
-      <span v-else-if="deal.hasBestOffer" class="format mono negotiable">acepta oferta</span>
-    </div>
-
-    <div class="body">
-      <h3 class="title">{{ deal.title }}</h3>
-
-      <div class="specs">
-        <span v-for="spec in specs" :key="spec" class="spec">{{ spec }}</span>
-        <span v-if="deal.condition" class="spec spec-condition">{{ deal.condition }}</span>
+        <!-- El cierre de una subasta es información urgente: va sobre la foto,
+             donde se ve antes que cualquier otra cosa de la tarjeta. -->
+        <span
+          v-if="countdown"
+          class="format mono"
+          :class="{ urgent: countdown.urgent, over: countdown.over }"
+        >
+          {{ countdown.over ? "cerrada" : countdown.text }}
+        </span>
+        <span v-else-if="deal.isAuction" class="format mono">subasta</span>
+        <span v-else-if="deal.hasBestOffer" class="format mono negotiable">acepta oferta</span>
       </div>
 
-      <p v-if="flags.length > 0" class="flags">{{ flags.join(" · ") }}</p>
+      <div class="body">
+        <h3 class="title">{{ deal.title }}</h3>
 
-      <div class="figures">
-        <div class="price mono">
-          <span class="currency">$</span>{{ Math.round(deal.price ?? 0) }}
+        <div class="specs">
+          <span v-for="spec in specs" :key="spec" class="spec">{{ spec }}</span>
+          <span v-if="deal.condition" class="spec spec-condition">{{ deal.condition }}</span>
         </div>
-        <div class="score" :data-tone="scoreTone">
-          <span class="score-value mono">{{ deal.score ?? "—" }}</span>
-          <span class="label">pts</span>
+
+        <p v-if="flags.length > 0" class="flags">{{ flags.join(" · ") }}</p>
+
+        <div class="figures">
+          <div class="price mono">
+            <span class="currency">$</span>{{ Math.round(deal.price ?? 0) }}
+          </div>
+          <div class="score" :data-tone="scoreTone">
+            <span class="score-value mono">{{ deal.score ?? "—" }}</span>
+            <span class="label">pts</span>
+          </div>
+        </div>
+
+        <div class="footer">
+          <span v-if="overBudget" class="label over">sobre tope · negociar</span>
+          <span v-else-if="seller" class="seller mono">{{ seller }}</span>
+          <span v-else></span>
+          <span class="label">hace {{ seenAgo }}</span>
         </div>
       </div>
+    </a>
 
-      <div class="budget" :class="{ over: overBudget }">
-        <span class="budget-fill" :style="{ width: `${budgetFill}%` }"></span>
-      </div>
-
-      <div class="footer">
-        <span class="label">{{ overBudget ? "sobre tope · negociable" : `queda $${remaining}` }}</span>
-        <span class="label">hace {{ seenAgo }}</span>
-      </div>
-
-      <p v-if="seller" class="seller mono">{{ seller }}</p>
-    </div>
-  </a>
+    <!-- Fuera del <a> porque no se puede anidar un botón dentro de un enlace. -->
+    <button
+      type="button"
+      class="seen-toggle"
+      :aria-pressed="seen"
+      :title="seen ? 'Marcar como no vista' : 'Marcar como vista'"
+      @click="emit('toggleSeen', deal.itemId)"
+    >
+      {{ seen ? "visto" : "marcar" }}
+    </button>
+  </div>
 </template>
 
 <style scoped>
+.wrap {
+  position: relative;
+  display: flex;
+  width: 100%;
+}
+/* Lo ya revisado se apaga en vez de desaparecer: sigue estando si lo buscás. */
+.wrap.seen .card {
+  opacity: 0.45;
+}
+.wrap.seen:hover .card {
+  opacity: 0.8;
+}
+
 .card {
   display: flex;
   flex-direction: column;
+  width: 100%;
   background: var(--surface);
   border: 1px solid var(--rule);
   border-top: 3px solid var(--rule-strong);
@@ -84,7 +108,7 @@ const { specs, flags, budgetFill, overBudget, remaining, scoreTone, countdown, s
   text-decoration: none;
   color: inherit;
   box-shadow: var(--shadow-row);
-  transition: border-color 0.12s ease, transform 0.12s ease;
+  transition: border-color 0.12s ease, transform 0.12s ease, opacity 0.12s ease;
 }
 .card:hover {
   transform: translateY(-2px);
@@ -96,6 +120,30 @@ const { specs, flags, budgetFill, overBudget, remaining, scoreTone, countdown, s
 }
 .card.needs-review {
   border-top-color: var(--warn);
+}
+
+.seen-toggle {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  padding: 3px 7px;
+  cursor: pointer;
+}
+.seen-toggle:hover {
+  color: var(--link);
+  border-color: var(--link);
+}
+.seen-toggle[aria-pressed="true"] {
+  color: var(--ink-2);
+  border-color: var(--rule-strong);
 }
 
 .shot {
@@ -226,30 +274,20 @@ const { specs, flags, budgetFill, overBudget, remaining, scoreTone, countdown, s
   color: var(--ink-3);
 }
 
-.budget {
-  height: 3px;
-  border-radius: 2px;
-  background: var(--surface-sunk);
-  overflow: hidden;
-}
-.budget-fill {
-  display: block;
-  height: 100%;
-  background: var(--good);
-}
-.budget.over .budget-fill {
-  background: var(--warn);
-}
-
 .footer {
   display: flex;
+  align-items: baseline;
   justify-content: space-between;
   gap: 8px;
 }
-
+.footer .over {
+  color: var(--warn);
+}
 .seller {
-  margin: 0;
   font-size: 10.5px;
   color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

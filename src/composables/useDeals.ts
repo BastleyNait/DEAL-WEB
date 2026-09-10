@@ -10,13 +10,14 @@ const AUTO_REFRESH_MS = 60_000;
  * (Dependency Inversion) en vez de importar Supabase directo, así se puede
  * testear con un repositorio fake.
  */
-export function useDeals(repository: DealsRepository) {
+export function useDeals(repository: DealsRepository, isSeen: (itemId: string) => boolean) {
   const deals = ref<Deal[]>([]);
   const loading = ref(true);
   const error = ref<string | null>(null);
   const lastUpdated = ref<Date | null>(null);
 
-  const view = ref<DealView>("all");
+  // Arranca en "sin ver": lo primero que querés es lo que todavía no miraste.
+  const view = ref<DealView>("unseen");
   const format = ref<DealFormat>("any");
   const sortBy = ref<DealSortBy>("score");
   const query = ref("");
@@ -38,6 +39,7 @@ export function useDeals(repository: DealsRepository) {
   const visibleDeals = computed(() => {
     let list = deals.value;
 
+    if (view.value === "unseen") list = list.filter((d) => !isSeen(d.itemId));
     if (view.value === "great") list = list.filter((d) => d.isGreatDeal);
     if (view.value === "review") list = list.filter(needsReview);
     if (format.value !== "any") list = list.filter((d) => dealFormat(d) === format.value);
@@ -64,6 +66,7 @@ export function useDeals(repository: DealsRepository) {
 
   const counts = computed(() => ({
     all: deals.value.length,
+    unseen: deals.value.filter((d) => !isSeen(d.itemId)).length,
     great: deals.value.filter((d) => d.isGreatDeal).length,
     review: deals.value.filter(needsReview).length,
     auction: deals.value.filter((d) => dealFormat(d) === "auction").length,

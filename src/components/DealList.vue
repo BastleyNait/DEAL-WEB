@@ -3,7 +3,17 @@ import type { Deal, DealLayout } from "../domain/types";
 import DealRow from "./DealRow.vue";
 import DealCard from "./DealCard.vue";
 
-defineProps<{ deals: Deal[]; budget: number; now: number; layout: DealLayout; emptyHint: string }>();
+defineProps<{
+  deals: Deal[];
+  budget: number;
+  now: number;
+  layout: DealLayout;
+  columns: number;
+  isSeen: (itemId: string) => boolean;
+  emptyHint: string;
+}>();
+
+const emit = defineEmits<{ open: [string]; toggleSeen: [string] }>();
 </script>
 
 <template>
@@ -12,10 +22,30 @@ defineProps<{ deals: Deal[]; budget: number; now: number; layout: DealLayout; em
     <p class="empty-hint">{{ emptyHint }}</p>
   </div>
 
-  <ol v-else :class="layout === 'grid' ? 'grid' : 'list'">
+  <ol
+    v-else
+    :class="layout === 'grid' ? 'grid' : 'list'"
+    :style="layout === 'grid' ? { '--cols': columns } : undefined"
+  >
     <li v-for="deal in deals" :key="deal.itemId">
-      <DealCard v-if="layout === 'grid'" :deal="deal" :budget="budget" :now="now" />
-      <DealRow v-else :deal="deal" :budget="budget" :now="now" />
+      <DealCard
+        v-if="layout === 'grid'"
+        :deal="deal"
+        :budget="budget"
+        :now="now"
+        :seen="isSeen(deal.itemId)"
+        @open="emit('open', $event)"
+        @toggle-seen="emit('toggleSeen', $event)"
+      />
+      <DealRow
+        v-else
+        :deal="deal"
+        :budget="budget"
+        :now="now"
+        :seen="isSeen(deal.itemId)"
+        @open="emit('open', $event)"
+        @toggle-seen="emit('toggleSeen', $event)"
+      />
     </li>
   </ol>
 </template>
@@ -34,18 +64,21 @@ defineProps<{ deals: Deal[]; budget: number; now: number; layout: DealLayout; em
   gap: 8px;
 }
 
-/* Grilla variable: las columnas se acomodan al ancho disponible en vez de
-   quedar fijas, así entra más por fila en pantallas anchas. */
+/* Cantidad de columnas controlada desde el slider de la barra. */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
   gap: 14px;
 }
 .grid li {
   display: flex;
 }
-.grid li > * {
-  width: 100%;
+
+/* En pantallas angostas el número elegido no entra: se acomoda solo. */
+@media (max-width: 860px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  }
 }
 
 .empty {

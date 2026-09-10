@@ -1,18 +1,29 @@
 <script setup lang="ts">
 import type { DealFormat, DealLayout, DealSortBy, DealView } from "../domain/types";
+import { MAX_COLUMNS, MIN_COLUMNS } from "../composables/useLayout";
 
 const view = defineModel<DealView>("view", { required: true });
 const format = defineModel<DealFormat>("format", { required: true });
 const layout = defineModel<DealLayout>("layout", { required: true });
+const columns = defineModel<number>("columns", { required: true });
 const sortBy = defineModel<DealSortBy>("sortBy", { required: true });
 const query = defineModel<string>("query", { required: true });
 
 defineProps<{
-  counts: { all: number; great: number; review: number; auction: number; offer: number; fixed: number };
+  counts: {
+    unseen: number;
+    all: number;
+    great: number;
+    review: number;
+    auction: number;
+    offer: number;
+    fixed: number;
+  };
   shown: number;
 }>();
 
 const VIEWS: { id: DealView; label: string }[] = [
+  { id: "unseen", label: "Sin ver" },
   { id: "all", label: "Todas" },
   { id: "great", label: "Ofertazas" },
   { id: "review", label: "A revisar" },
@@ -58,7 +69,21 @@ const VIEWS: { id: DealView; label: string }[] = [
       </select>
     </label>
 
-    <div class="layout-switch" role="group" aria-label="Vista">
+    <div class="right">
+      <label v-if="layout === 'grid'" class="density">
+      <span class="label">por fila</span>
+      <input
+        v-model.number="columns"
+        type="range"
+        :min="MIN_COLUMNS"
+        :max="MAX_COLUMNS"
+        step="1"
+        aria-label="Tarjetas por fila"
+      />
+        <span class="density-value mono">{{ columns }}</span>
+      </label>
+
+      <div class="layout-switch" role="group" aria-label="Vista">
       <button
         type="button"
         :aria-pressed="layout === 'list'"
@@ -86,11 +111,12 @@ const VIEWS: { id: DealView; label: string }[] = [
           <rect x="1" y="8.8" width="6.2" height="6.2" rx="1.2" fill="currentColor" />
           <rect x="8.8" y="8.8" width="6.2" height="6.2" rx="1.2" fill="currentColor" />
         </svg>
-        <span class="sr-only">Grilla</span>
-      </button>
-    </div>
+          <span class="sr-only">Grilla</span>
+        </button>
+      </div>
 
-    <span class="shown label">{{ shown }} en pantalla</span>
+      <span class="shown label">{{ shown }} en pantalla</span>
+    </div>
   </div>
 </template>
 
@@ -171,9 +197,31 @@ select {
   padding: 5px 8px;
 }
 
+.right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.density {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.density input[type="range"] {
+  width: 92px;
+  accent-color: var(--link);
+  cursor: pointer;
+}
+.density-value {
+  font-size: 12px;
+  color: var(--ink-2);
+  min-width: 9px;
+}
+
 .layout-switch {
   display: flex;
-  margin-left: auto;
   background: var(--surface-sunk);
   border-radius: 7px;
   padding: 2px;

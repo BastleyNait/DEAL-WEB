@@ -22,20 +22,12 @@ export function useDealPresentation(
 
   const flags = computed(() => reviewFlags(toValue(deal)));
 
-  // Posición del precio sobre el tope de presupuesto: lo que importa no es el
-  // número suelto sino cuánto margen queda hasta el límite.
-  const budgetFill = computed(() => {
-    const price = toValue(deal).price;
-    if (price == null) return 0;
-    return Math.min(100, (price / toValue(budget)) * 100);
-  });
-
+  // Solo interesa el caso accionable: precio por encima del tope, que es la
+  // excepción de reacondicionado con oferta y hay que negociarlo.
   const overBudget = computed(() => {
     const price = toValue(deal).price;
     return price != null && price > toValue(budget);
   });
-
-  const remaining = computed(() => Math.max(0, toValue(budget) - Math.round(toValue(deal).price ?? 0)));
 
   const scoreTone = computed(() => {
     const score = toValue(deal).score ?? 0;
@@ -75,5 +67,5 @@ export function useDealPresentation(
     return `${Math.floor(hours / 24)} d`;
   });
 
-  return { specs, flags, budgetFill, overBudget, remaining, scoreTone, countdown, seller, seenAgo };
+  return { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo };
 }

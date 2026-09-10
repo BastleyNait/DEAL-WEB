@@ -5,6 +5,7 @@ import { useDeals } from "./composables/useDeals";
 import { useClock } from "./composables/useClock";
 import { useTheme } from "./composables/useTheme";
 import { useLayout } from "./composables/useLayout";
+import { useSeenDeals } from "./composables/useSeenDeals";
 import DeskHeader from "./components/DeskHeader.vue";
 import Toolbar from "./components/Toolbar.vue";
 import DealList from "./components/DealList.vue";
@@ -20,13 +21,18 @@ const misconfigured = !supabaseUrl || !anonKey;
 // Composition root del frontend: acá (y solo acá) se elige la implementación
 // concreta del repositorio. El resto de la app solo conoce DealsRepository.
 const repository = new SupabaseDealsRepository(supabaseUrl, anonKey);
-const { loading, error, lastUpdated, view, format, sortBy, query, visibleDeals, counts, reload } = useDeals(repository);
+const { isSeen, markSeen, toggleSeen } = useSeenDeals();
+const { loading, error, lastUpdated, view, format, sortBy, query, visibleDeals, counts, reload } = useDeals(
+  repository,
+  isSeen,
+);
 const now = useClock();
 const { toggle: toggleTheme } = useTheme();
-const { layout } = useLayout();
+const { layout, columns } = useLayout();
 
 const emptyHint = computed(() => {
   if (query.value.trim()) return `Ningún equipo coincide con “${query.value.trim()}”.`;
+  if (view.value === "unseen") return "Ya revisaste todas las ofertas guardadas. Van a aparecer nuevas en el próximo barrido.";
   if (view.value === "great") return "Todavía no apareció ninguna por debajo de $160 ni con puntaje alto.";
   if (view.value === "review") return "Ninguna oferta quedó con datos faltantes: todas traen descripción y batería.";
   return "El cazador todavía no guardó ofertas. Corré la función hunt-deals o esperá al próximo barrido.";
@@ -49,6 +55,7 @@ const emptyHint = computed(() => {
       v-model:view="view"
       v-model:format="format"
       v-model:layout="layout"
+      v-model:columns="columns"
       v-model:sort-by="sortBy"
       v-model:query="query"
       :counts="counts"
@@ -68,7 +75,11 @@ const emptyHint = computed(() => {
         :budget="BUDGET_USD"
         :now="now"
         :layout="layout"
+        :columns="columns"
+        :is-seen="isSeen"
         :empty-hint="emptyHint"
+        @open="markSeen"
+        @toggle-seen="toggleSeen"
       />
     </main>
   </template>
