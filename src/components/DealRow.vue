@@ -1,66 +1,16 @@
 <script setup lang="ts">
-import { computed } from "vue";
 import type { Deal } from "../domain/types";
-import { reviewFlags } from "../domain/types";
-import { brandInitials, ramLabel, screenLabel, storageLabel } from "../domain/listing-specs";
+import { brandInitials } from "../domain/listing-specs";
+import { useDealPresentation } from "../composables/useDealPresentation";
 
 const props = defineProps<{ deal: Deal; budget: number; now: number }>();
 
-const specs = computed(() =>
-  [props.deal.cpuMatch, ramLabel(props.deal.title), storageLabel(props.deal.title), screenLabel(props.deal.title)].filter(
-    (s): s is string => Boolean(s),
-  ),
-);
-
-const flags = computed(() => reviewFlags(props.deal));
-
-// Posición del precio sobre el tope de presupuesto: lo que importa no es el
-// número suelto sino cuánto margen queda hasta el límite.
-const budgetFill = computed(() => {
-  if (props.deal.price == null) return 0;
-  return Math.min(100, (props.deal.price / props.budget) * 100);
-});
-const overBudget = computed(() => props.deal.price != null && props.deal.price > props.budget);
-
-const scoreTone = computed(() => {
-  const score = props.deal.score ?? 0;
-  if (score >= 65) return "high";
-  if (score >= 45) return "mid";
-  return "low";
-});
-
-const countdown = computed(() => {
-  if (!props.deal.isAuction || !props.deal.endDate) return null;
-  const msLeft = new Date(props.deal.endDate).getTime() - props.now;
-  if (msLeft <= 0) return { text: "cerrada", urgent: false, over: true };
-
-  const minutes = Math.floor(msLeft / 60_000);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-
-  const text = days > 0 ? `${days}d ${hours % 24}h` : hours > 0 ? `${hours}h ${minutes % 60}m` : `${minutes}m`;
-  return { text, urgent: hours < 6, over: false };
-});
-
-// Reputación del vendedor: el backend ya descarta por debajo del umbral, pero
-// verla ayuda a decidir entre dos ofertas parecidas.
-const seller = computed(() => {
-  const score = props.deal.sellerFeedbackScore;
-  const pct = props.deal.sellerFeedbackPercentage;
-  if (score === null && pct === null) return null;
-  const sales = score !== null ? `${score.toLocaleString("es")} ventas` : "";
-  const rating = pct !== null ? `${pct}%` : "";
-  return [sales, rating].filter(Boolean).join(" · ");
-});
-
-const seenAgo = computed(() => {
-  const minutes = Math.floor((props.now - new Date(props.deal.firstSeenAt).getTime()) / 60_000);
-  if (minutes < 1) return "recién";
-  if (minutes < 60) return `${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} h`;
-  return `${Math.floor(hours / 24)} d`;
-});
+const { specs, flags, budgetFill, overBudget, remaining, scoreTone, countdown, seller, seenAgo } =
+  useDealPresentation(
+    () => props.deal,
+    () => props.budget,
+    () => props.now,
+  );
 </script>
 
 <template>
@@ -97,7 +47,7 @@ const seenAgo = computed(() => {
         <span class="budget-fill" :style="{ width: `${budgetFill}%` }"></span>
       </div>
       <span class="budget-label label">
-        {{ overBudget ? `sobre tope · negociable` : `queda $${Math.max(0, budget - Math.round(deal.price ?? 0))}` }}
+        {{ overBudget ? "sobre tope · negociable" : `queda $${remaining}` }}
       </span>
     </div>
 

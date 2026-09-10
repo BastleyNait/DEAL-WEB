@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { Deal } from "../domain/types";
+import type { Deal, DealLayout } from "../domain/types";
 import DealRow from "./DealRow.vue";
+import DealCard from "./DealCard.vue";
 
-defineProps<{ deals: Deal[]; budget: number; now: number; emptyHint: string }>();
+defineProps<{ deals: Deal[]; budget: number; now: number; layout: DealLayout; emptyHint: string }>();
 </script>
 
 <template>
@@ -10,21 +11,41 @@ defineProps<{ deals: Deal[]; budget: number; now: number; emptyHint: string }>()
     <p class="empty-title">Nada que mostrar acá</p>
     <p class="empty-hint">{{ emptyHint }}</p>
   </div>
-  <ol v-else class="list">
+
+  <ol v-else :class="layout === 'grid' ? 'grid' : 'list'">
     <li v-for="deal in deals" :key="deal.itemId">
-      <DealRow :deal="deal" :budget="budget" :now="now" />
+      <DealCard v-if="layout === 'grid'" :deal="deal" :budget="budget" :now="now" />
+      <DealRow v-else :deal="deal" :budget="budget" :now="now" />
     </li>
   </ol>
 </template>
 
 <style scoped>
-.list {
+.list,
+.grid {
   list-style: none;
+  margin: 0;
+  padding: 16px 24px 48px;
+}
+
+.list {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin: 0;
-  padding: 16px 24px 48px;
+}
+
+/* Grilla variable: las columnas se acomodan al ancho disponible en vez de
+   quedar fijas, así entra más por fila en pantallas anchas. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+}
+.grid li {
+  display: flex;
+}
+.grid li > * {
+  width: 100%;
 }
 
 .empty {

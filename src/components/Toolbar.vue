@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { DealFormat, DealSortBy, DealView } from "../domain/types";
+import type { DealFormat, DealLayout, DealSortBy, DealView } from "../domain/types";
 
 const view = defineModel<DealView>("view", { required: true });
 const format = defineModel<DealFormat>("format", { required: true });
+const layout = defineModel<DealLayout>("layout", { required: true });
 const sortBy = defineModel<DealSortBy>("sortBy", { required: true });
 const query = defineModel<string>("query", { required: true });
 
@@ -56,6 +57,38 @@ const VIEWS: { id: DealView; label: string }[] = [
         <option value="date">Novedad</option>
       </select>
     </label>
+
+    <div class="layout-switch" role="group" aria-label="Vista">
+      <button
+        type="button"
+        :aria-pressed="layout === 'list'"
+        :class="{ active: layout === 'list' }"
+        title="Vista de lista"
+        @click="layout = 'list'"
+      >
+        <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true">
+          <rect x="1" y="2.5" width="14" height="2.6" rx="1" fill="currentColor" />
+          <rect x="1" y="6.7" width="14" height="2.6" rx="1" fill="currentColor" />
+          <rect x="1" y="10.9" width="14" height="2.6" rx="1" fill="currentColor" />
+        </svg>
+        <span class="sr-only">Lista</span>
+      </button>
+      <button
+        type="button"
+        :aria-pressed="layout === 'grid'"
+        :class="{ active: layout === 'grid' }"
+        title="Vista de grilla"
+        @click="layout = 'grid'"
+      >
+        <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true">
+          <rect x="1" y="1" width="6.2" height="6.2" rx="1.2" fill="currentColor" />
+          <rect x="8.8" y="1" width="6.2" height="6.2" rx="1.2" fill="currentColor" />
+          <rect x="1" y="8.8" width="6.2" height="6.2" rx="1.2" fill="currentColor" />
+          <rect x="8.8" y="8.8" width="6.2" height="6.2" rx="1.2" fill="currentColor" />
+        </svg>
+        <span class="sr-only">Grilla</span>
+      </button>
+    </div>
 
     <span class="shown label">{{ shown }} en pantalla</span>
   </div>
@@ -138,8 +171,43 @@ select {
   padding: 5px 8px;
 }
 
-.shown {
+.layout-switch {
+  display: flex;
   margin-left: auto;
+  background: var(--surface-sunk);
+  border-radius: 7px;
+  padding: 2px;
+}
+.layout-switch button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 26px;
+  color: var(--ink-3);
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.layout-switch button.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-row);
+}
+.layout-switch button:hover:not(.active) {
+  color: var(--ink-2);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.shown {
   color: var(--ink-3);
 }
 </style>

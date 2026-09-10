@@ -4,6 +4,7 @@ import { SupabaseDealsRepository } from "./infrastructure/SupabaseDealsRepositor
 import { useDeals } from "./composables/useDeals";
 import { useClock } from "./composables/useClock";
 import { useTheme } from "./composables/useTheme";
+import { useLayout } from "./composables/useLayout";
 import DeskHeader from "./components/DeskHeader.vue";
 import Toolbar from "./components/Toolbar.vue";
 import DealList from "./components/DealList.vue";
@@ -22,6 +23,7 @@ const repository = new SupabaseDealsRepository(supabaseUrl, anonKey);
 const { loading, error, lastUpdated, view, format, sortBy, query, visibleDeals, counts, reload } = useDeals(repository);
 const now = useClock();
 const { toggle: toggleTheme } = useTheme();
+const { layout } = useLayout();
 
 const emptyHint = computed(() => {
   if (query.value.trim()) return `Ningún equipo coincide con “${query.value.trim()}”.`;
@@ -46,6 +48,7 @@ const emptyHint = computed(() => {
     <Toolbar
       v-model:view="view"
       v-model:format="format"
+      v-model:layout="layout"
       v-model:sort-by="sortBy"
       v-model:query="query"
       :counts="counts"
@@ -59,7 +62,14 @@ const emptyHint = computed(() => {
         <button type="button" @click="reload">Reintentar</button>
       </div>
       <p v-else-if="loading && visibleDeals.length === 0" class="loading label">leyendo ofertas…</p>
-      <DealList v-else :deals="visibleDeals" :budget="BUDGET_USD" :now="now" :empty-hint="emptyHint" />
+      <DealList
+        v-else
+        :deals="visibleDeals"
+        :budget="BUDGET_USD"
+        :now="now"
+        :layout="layout"
+        :empty-hint="emptyHint"
+      />
     </main>
   </template>
 </template>

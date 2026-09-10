@@ -29,6 +29,9 @@ export type DealSortBy = "score" | "price" | "date" | "ending";
 
 export type DealView = "all" | "great" | "review";
 
+/** Lista densa para escanear muchas, grilla para comparar el estado visual. */
+export type DealLayout = "list" | "grid";
+
 /** Cómo se compra: cada formato se negocia distinto, por eso se filtran aparte. */
 export type DealFormat = "any" | "auction" | "offer" | "fixed";
 
