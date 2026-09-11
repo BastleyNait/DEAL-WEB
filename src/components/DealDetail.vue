@@ -1,10 +1,43 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import type { Deal } from "../domain/types";
+import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from "vue";
+import type { Deal, DealDetail, DealsRepository } from "../domain/types";
 import { useDealPresentation } from "../composables/useDealPresentation";
+import { sanitizeDescription, hasRenderableDescription } from "../domain/sanitize-description";
 
-const props = defineProps<{ deal: Deal; budget: number; now: number; seen: boolean }>();
-const emit = defineEmits<{ close: []; toggleSeen: [string] }>();
+const props = defineProps<{
+  deal: Deal;
+  budget: number;
+  now: number;
+  seen: boolean;
+  repository: DealsRepository;
+  hasPrev: boolean;
+  hasNext: boolean;
+  position: string;
+}>();
+const emit = defineEmits<{ close: []; toggleSeen: [string]; prev: []; next: [] }>();
+
+// El detalle pesado se pide recién al abrir, no viene en el listado.
+const detail = ref<DealDetail | null>(null);
+const detailError = ref<string | null>(null);
+
+watchEffect(async () => {
+  const itemId = props.deal.itemId;
+  detail.value = null;
+  detailError.value = null;
+  try {
+    const loaded = await props.repository.getDetail(itemId);
+    // Si mientras cargaba se abrió otra oferta, se descarta esta respuesta.
+    if (props.deal.itemId === itemId) detail.value = loaded;
+  } catch (err) {
+    detailError.value = err instanceof Error ? err.message : String(err);
+  }
+});
+
+const descriptionHtml = computed(() => {
+  const raw = detail.value?.sellerDescriptionHtml;
+  if (raw && hasRenderableDescription(raw)) return sanitizeDescription(raw);
+  return null;
+});
 
 const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useDealPresentation(
   () => props.deal,
@@ -13,7 +46,7 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useD
 );
 
 const photos = computed(() => {
-  const all = [props.deal.imageUrl, ...props.deal.additionalImages].filter((u): u is string => Boolean(u));
+  const all = [props.deal.imageUrl, ...(detail.value?.additionalImages ?? [])].filter((u): u is string => Boolean(u));
   return [...new Set(all)];
 });
 
@@ -22,11 +55,13 @@ watch(() => props.deal.itemId, () => (activePhoto.value = 0));
 
 const dialog = ref<HTMLElement | null>(null);
 
+// Las flechas mueven entre ofertas, que es lo que muestran los botones de los
+// costados. Las fotos se cambian desde las miniaturas, que están siempre a la
+// vista: usar la misma tecla para las dos cosas sería ambiguo.
 function onKeydown(event: KeyboardEvent) {
   if (event.key === "Escape") emit("close");
-  if (photos.value.length < 2) return;
-  if (event.key === "ArrowRight") activePhoto.value = (activePhoto.value + 1) % photos.value.length;
-  if (event.key === "ArrowLeft") activePhoto.value = (activePhoto.value - 1 + photos.value.length) % photos.value.length;
+  if (event.key === "ArrowRight" && props.hasNext) emit("next");
+  if (event.key === "ArrowLeft" && props.hasPrev) emit("prev");
 }
 
 onMounted(() => {
@@ -44,6 +79,16 @@ onUnmounted(() => {
 
 <template>
   <div class="backdrop" @click.self="emit('close')">
+    <button
+      type="button"
+      class="step prev"
+      :disabled="!hasPrev"
+      aria-label="Oferta anterior"
+      @click="emit('prev')"
+    >
+      ‹
+    </button>
+
     <div
       ref="dialog"
       class="dialog"
@@ -129,10 +174,10 @@ onUnmounted(() => {
             <span v-for="spec in specs" :key="spec" class="spec">{{ spec }}</span>
           </div>
 
-          <div v-if="deal.aspects.length" class="aspects">
+          <div v-if="detail?.aspects.length" class="aspects">
             <h3 class="label">Ficha del vendedor</h3>
             <dl>
-              <div v-for="aspect in deal.aspects" :key="aspect.name">
+              <div v-for="aspect in detail.aspects" :key="aspect.name">
                 <dt>{{ aspect.name }}</dt>
                 <dd>{{ aspect.value }}</dd>
               </div>
@@ -141,19 +186,35 @@ onUnmounted(() => {
 
           <div class="description">
             <h3 class="label">Descripción</h3>
-            <p v-if="deal.sellerDescription">{{ deal.sellerDescription }}</p>
+            <p v-if="detailError" class="soft">No se pudo cargar el detalle: {{ detailError }}</p>
+            <p v-else-if="!detail" class="soft">Cargando…</p>
+            <!-- Saneado con DOMPurify en sanitize-description.ts: lista blanca
+                 de etiquetas de formato y cero atributos. -->
+            <div v-else-if="descriptionHtml" class="rich" v-html="descriptionHtml"></div>
+            <p v-else-if="detail.sellerDescription">{{ detail.sellerDescription }}</p>
             <p v-else class="soft">El vendedor no dejó descripción, o la publicación ya no está disponible.</p>
           </div>
         </section>
       </div>
 
       <footer class="foot">
+        <span class="position label">{{ position }}</span>
         <button type="button" class="ghost" @click="emit('toggleSeen', deal.itemId)">
           {{ seen ? "Marcar como no vista" : "Marcar como vista" }}
         </button>
         <a class="primary" :href="deal.url" target="_blank" rel="noopener noreferrer">Abrir en eBay ↗</a>
       </footer>
     </div>
+
+    <button
+      type="button"
+      class="step next"
+      :disabled="!hasNext"
+      aria-label="Oferta siguiente"
+      @click="emit('next')"
+    >
+      ›
+    </button>
   </div>
 </template>
 
@@ -162,11 +223,35 @@ onUnmounted(() => {
   position: fixed;
   inset: 0;
   z-index: 50;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   padding: 24px;
   background: rgba(8, 11, 15, 0.62);
   backdrop-filter: blur(2px);
+}
+
+/* Recorrer la lista sin volver a la grilla: el modal es donde se decide. */
+.step {
+  flex: none;
+  width: 40px;
+  height: 64px;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.step:hover:not(:disabled) {
+  color: var(--link);
+  border-color: var(--link);
+}
+.step:disabled {
+  opacity: 0.3;
+  cursor: default;
 }
 
 .dialog {
@@ -428,8 +513,85 @@ onUnmounted(() => {
   overflow-wrap: anywhere;
 }
 
+/*
+ * Contenido del vendedor ya saneado. Los estilos son nuestros, no suyos: las
+ * plantillas de eBay traen tipografías gigantes y tablas anchísimas que
+ * romperían el modal, así que acá se normaliza todo al tamaño del panel.
+ */
+.rich {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  max-height: 260px;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+.rich :deep(*) {
+  max-width: 100%;
+  font-size: inherit !important;
+  font-family: inherit !important;
+  color: inherit !important;
+  background: transparent !important;
+}
+.rich :deep(p),
+.rich :deep(div),
+.rich :deep(ul),
+.rich :deep(ol),
+.rich :deep(table) {
+  margin: 0 0 8px;
+}
+.rich :deep(:last-child) {
+  margin-bottom: 0;
+}
+.rich :deep(h1),
+.rich :deep(h2),
+.rich :deep(h3),
+.rich :deep(h4),
+.rich :deep(h5),
+.rich :deep(h6) {
+  margin: 12px 0 5px;
+  font-size: 12.5px !important;
+  font-weight: 600;
+  color: var(--ink) !important;
+}
+.rich :deep(strong),
+.rich :deep(b) {
+  font-weight: 600;
+  color: var(--ink) !important;
+}
+.rich :deep(ul),
+.rich :deep(ol) {
+  padding-left: 18px;
+}
+.rich :deep(li) {
+  margin-bottom: 3px;
+}
+.rich :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+}
+.rich :deep(td),
+.rich :deep(th) {
+  padding: 3px 8px 3px 0;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--rule);
+}
+.rich :deep(th) {
+  color: var(--ink-3) !important;
+  font-weight: 500;
+}
+.rich :deep(hr) {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: 10px 0;
+}
+
 .foot {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 10px;
   padding: 13px 18px;
@@ -464,9 +626,19 @@ onUnmounted(() => {
   filter: brightness(1.08);
 }
 
+.position {
+  margin-right: auto;
+  color: var(--ink-3);
+}
+
 @media (max-width: 780px) {
   .backdrop {
     padding: 0;
+    gap: 0;
+  }
+  /* En pantalla chica los costados no entran: se navega con el pie y el teclado. */
+  .step {
+    display: none;
   }
   .dialog {
     max-height: 100vh;

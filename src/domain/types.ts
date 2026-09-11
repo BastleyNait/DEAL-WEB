@@ -26,9 +26,6 @@ export interface Deal {
   sellerUsername: string | null;
   sellerFeedbackScore: number | null;
   sellerFeedbackPercentage: number | null;
-  sellerDescription: string | null;
-  aspects: ListingAspect[];
-  additionalImages: string[];
   url: string;
   imageUrl: string | null;
   firstSeenAt: string;
@@ -54,8 +51,22 @@ export function dealFormat(deal: Deal): DealFormat {
   return deal.isAuction ? "auction" : "buyNow";
 }
 
+/**
+ * Lo pesado de una publicación (descripción con formato, ficha, fotos). Va
+ * aparte del listado y se pide recién al abrir el detalle: con ~300 ofertas,
+ * traer esto en cada refresco serían varios MB.
+ */
+export interface DealDetail {
+  itemId: string;
+  sellerDescription: string | null;
+  sellerDescriptionHtml: string | null;
+  aspects: ListingAspect[];
+  additionalImages: string[];
+}
+
 export interface DealsRepository {
   listDeals(): Promise<Deal[]>;
+  getDetail(itemId: string): Promise<DealDetail>;
 }
 
 /** Puerto: qué ofertas ya se revisaron, compartido entre dispositivos. */

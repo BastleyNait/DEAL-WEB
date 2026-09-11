@@ -25,7 +25,7 @@ const misconfigured = !supabaseUrl || !anonKey;
 // concreta del repositorio. El resto de la app solo conoce DealsRepository.
 const repository = new SupabaseDealsRepository(supabaseUrl, anonKey);
 const { isSeen, markSeen, toggleSeen, syncError } = useSeenDeals(new SupabaseSeenRepository(supabaseUrl, anonKey));
-const { loading, error, lastUpdated, view, format, sortBy, query, visibleDeals, counts, reload } = useDeals(
+const { deals, loading, error, lastUpdated, view, format, sortBy, query, visibleDeals, counts, reload } = useDeals(
   repository,
   isSeen,
 );
@@ -35,15 +35,35 @@ const { layout, columns } = useLayout();
 
 // Abrir el detalle cuenta como haberla revisado.
 const openedDeal = ref<Deal | null>(null);
+// La lista de navegación se congela al abrir: como abrir marca la oferta como
+// vista, si se navegara sobre la lista viva la oferta actual desaparecería de
+// ella (en la vista "Sin ver") y el "siguiente" saltaría de forma impredecible.
+const navList = ref<Deal[]>([]);
+
 function openDeal(deal: Deal) {
+  navList.value = [...visibleDeals.value];
   openedDeal.value = deal;
   markSeen(deal.itemId);
 }
 
-// La oferta abierta se vuelve a leer de la lista en cada refresco, para que el
-// modal no quede mostrando un precio viejo mientras está abierto.
+const navIndex = computed(() =>
+  openedDeal.value ? navList.value.findIndex((d) => d.itemId === openedDeal.value!.itemId) : -1,
+);
+const hasPrev = computed(() => navIndex.value > 0);
+const hasNext = computed(() => navIndex.value >= 0 && navIndex.value < navList.value.length - 1);
+const navPosition = computed(() => (navIndex.value >= 0 ? `${navIndex.value + 1} de ${navList.value.length}` : ""));
+
+function stepDeal(delta: number) {
+  const target = navList.value[navIndex.value + delta];
+  if (!target) return;
+  openedDeal.value = target;
+  markSeen(target.itemId);
+}
+
+// La oferta abierta se vuelve a leer de los datos frescos en cada refresco,
+// para que el modal no quede mostrando un precio viejo mientras está abierto.
 const detailDeal = computed(() =>
-  openedDeal.value ? (visibleDeals.value.find((d) => d.itemId === openedDeal.value!.itemId) ?? openedDeal.value) : null,
+  openedDeal.value ? (deals.value.find((d) => d.itemId === openedDeal.value!.itemId) ?? openedDeal.value) : null,
 );
 
 const emptyHint = computed(() => {
@@ -113,8 +133,14 @@ const emptyHint = computed(() => {
       :budget="BUDGET_USD"
       :now="now"
       :seen="isSeen(detailDeal.itemId)"
+      :repository="repository"
+      :has-prev="hasPrev"
+      :has-next="hasNext"
+      :position="navPosition"
       @close="openedDeal = null"
       @toggle-seen="toggleSeen"
+      @prev="stepDeal(-1)"
+      @next="stepDeal(1)"
     />
   </template>
 </template>

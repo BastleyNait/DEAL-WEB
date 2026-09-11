@@ -1,4 +1,12 @@
-import type { Deal, DealsRepository, ListingAspect } from "../domain/types";
+import type { Deal, DealDetail, DealsRepository, ListingAspect } from "../domain/types";
+
+interface DetailRow {
+  item_id: string;
+  seller_description: string | null;
+  seller_description_html: string | null;
+  aspects: ListingAspect[] | null;
+  additional_images: string[] | null;
+}
 
 interface DealRow {
   item_id: string;
@@ -19,9 +27,6 @@ interface DealRow {
   seller_username: string | null;
   seller_feedback_score: number | null;
   seller_feedback_percentage: number | null;
-  seller_description: string | null;
-  aspects: ListingAspect[] | null;
-  additional_images: string[] | null;
   url: string;
   image_url: string | null;
   first_seen_at: string;
@@ -47,9 +52,6 @@ function toDeal(row: DealRow): Deal {
     sellerUsername: row.seller_username,
     sellerFeedbackScore: row.seller_feedback_score,
     sellerFeedbackPercentage: row.seller_feedback_percentage,
-    sellerDescription: row.seller_description,
-    aspects: row.aspects ?? [],
-    additionalImages: row.additional_images ?? [],
     url: row.url,
     imageUrl: row.image_url,
     firstSeenAt: row.first_seen_at,
@@ -82,5 +84,29 @@ export class SupabaseDealsRepository implements DealsRepository {
 
     const rows = (await res.json()) as DealRow[];
     return rows.map(toDeal);
+  }
+
+  async getDetail(itemId: string): Promise<DealDetail> {
+    const url = `${this.supabaseUrl}/rest/v1/deal_details_public?item_id=eq.${encodeURIComponent(itemId)}&select=*`;
+    const res = await fetch(url, {
+      headers: {
+        apikey: this.anonKey,
+        Authorization: `Bearer ${this.anonKey}`,
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`No se pudo leer el detalle (${res.status}): ${await res.text()}`);
+    }
+
+    const rows = (await res.json()) as DetailRow[];
+    const row = rows[0];
+    return {
+      itemId,
+      sellerDescription: row?.seller_description ?? null,
+      sellerDescriptionHtml: row?.seller_description_html ?? null,
+      aspects: row?.aspects ?? [],
+      additionalImages: row?.additional_images ?? [],
+    };
   }
 }
