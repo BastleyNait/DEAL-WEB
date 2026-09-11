@@ -48,6 +48,7 @@ const detailDeal = computed(() =>
 
 const emptyHint = computed(() => {
   if (query.value.trim()) return `Ningún equipo coincide con “${query.value.trim()}”.`;
+  if (format.value === "auction") return "No hay subastas abiertas que cumplan el criterio.";
   if (view.value === "unseen") return "Ya revisaste todas las ofertas guardadas. Van a aparecer nuevas en el próximo barrido.";
   if (view.value === "great") return "Todavía no apareció ninguna por debajo de $160 ni con puntaje alto.";
   if (view.value === "review") return "Ninguna oferta quedó con datos faltantes: todas traen descripción y batería.";

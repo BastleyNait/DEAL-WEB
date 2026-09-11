@@ -18,7 +18,9 @@ export function useDeals(repository: DealsRepository, isSeen: (itemId: string) =
 
   // Arranca en "sin ver": lo primero que querés es lo que todavía no miraste.
   const view = ref<DealView>("unseen");
-  const format = ref<DealFormat>("any");
+  // Arranca en compra directa: las subastas quedan en segundo plano porque su
+  // precio final es desconocido.
+  const format = ref<DealFormat>("buyNow");
   const sortBy = ref<DealSortBy>("score");
   const query = ref("");
 
@@ -42,7 +44,7 @@ export function useDeals(repository: DealsRepository, isSeen: (itemId: string) =
     if (view.value === "unseen") list = list.filter((d) => !isSeen(d.itemId));
     if (view.value === "great") list = list.filter((d) => d.isGreatDeal);
     if (view.value === "review") list = list.filter(needsReview);
-    if (format.value !== "any") list = list.filter((d) => dealFormat(d) === format.value);
+    list = list.filter((d) => dealFormat(d) === format.value);
 
     const term = query.value.trim().toLowerCase();
     if (term) {
@@ -68,19 +70,26 @@ export function useDeals(repository: DealsRepository, isSeen: (itemId: string) =
     });
   });
 
-  const counts = computed(() => ({
-    all: deals.value.length,
-    unseen: deals.value.filter((d) => !isSeen(d.itemId)).length,
-    great: deals.value.filter((d) => d.isGreatDeal).length,
-    review: deals.value.filter(needsReview).length,
-    auction: deals.value.filter((d) => dealFormat(d) === "auction").length,
-    offer: deals.value.filter((d) => dealFormat(d) === "offer").length,
-    fixed: deals.value.filter((d) => dealFormat(d) === "fixed").length,
-    cheapest: deals.value.reduce<number | null>(
-      (min, d) => (d.price != null && (min === null || d.price < min) ? d.price : min),
-      null,
-    ),
-  }));
+  const counts = computed(() => {
+    const buyNow = deals.value.filter((d) => dealFormat(d) === "buyNow");
+    const auction = deals.value.filter((d) => dealFormat(d) === "auction");
+    // Los contadores de vista cuentan dentro del formato activo: decir
+    // "Sin ver 234" cuando en pantalla hay 160 sería mentir.
+    const scoped = format.value === "auction" ? auction : buyNow;
+
+    return {
+      all: scoped.length,
+      unseen: scoped.filter((d) => !isSeen(d.itemId)).length,
+      great: scoped.filter((d) => d.isGreatDeal).length,
+      review: scoped.filter(needsReview).length,
+      buyNow: buyNow.length,
+      auction: auction.length,
+      cheapest: scoped.reduce<number | null>(
+        (min, d) => (d.price != null && (min === null || d.price < min) ? d.price : min),
+        null,
+      ),
+    };
+  });
 
   onMounted(() => {
     load();

@@ -15,9 +15,8 @@ defineProps<{
     all: number;
     great: number;
     review: number;
+    buyNow: number;
     auction: number;
-    offer: number;
-    fixed: number;
   };
   shown: number;
 }>();
@@ -49,15 +48,29 @@ const VIEWS: { id: DealView; label: string }[] = [
 
     <input v-model="query" type="search" class="search" placeholder="Filtrar por modelo o CPU…" />
 
-    <label class="sort">
-      <span class="label">formato</span>
-      <select v-model="format">
-        <option value="any">Todos</option>
-        <option value="auction">Subasta ({{ counts.auction }})</option>
-        <option value="offer">Acepta oferta ({{ counts.offer }})</option>
-        <option value="fixed">Precio fijo ({{ counts.fixed }})</option>
-      </select>
-    </label>
+    <!-- Dos formatos, no cuatro: o el precio es el que ves (fijo y "acepta
+         oferta", donde la oferta solo puede bajarlo) o es una puja que puede
+         subir. Arranca en compra directa. -->
+    <div class="segmented formats" role="group" aria-label="Formato de compra">
+      <button
+        type="button"
+        :aria-pressed="format === 'buyNow'"
+        :class="{ active: format === 'buyNow' }"
+        @click="format = 'buyNow'"
+      >
+        Compra directa
+        <span class="count mono">{{ counts.buyNow }}</span>
+      </button>
+      <button
+        type="button"
+        :aria-pressed="format === 'auction'"
+        :class="{ active: format === 'auction' }"
+        @click="format = 'auction'"
+      >
+        Subastas
+        <span class="count mono">{{ counts.auction }}</span>
+      </button>
+    </div>
 
     <label class="sort">
       <span class="label">orden</span>
@@ -164,6 +177,14 @@ const VIEWS: { id: DealView; label: string }[] = [
 }
 .segmented button.active .count {
   color: var(--link);
+}
+/* Las subastas quedan en segundo plano: el formato activo se ve, pero el
+   conmutador no compite con el selector de vistas. */
+.formats button {
+  color: var(--ink-3);
+}
+.formats button.active {
+  color: var(--ink-2);
 }
 
 .search {

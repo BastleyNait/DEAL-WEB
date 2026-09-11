@@ -41,13 +41,17 @@ export type DealView = "unseen" | "all" | "great" | "review";
 /** Lista densa para escanear muchas, grilla para comparar el estado visual. */
 export type DealLayout = "list" | "grid";
 
-/** Cómo se compra: cada formato se negocia distinto, por eso se filtran aparte. */
-export type DealFormat = "any" | "auction" | "offer" | "fixed";
+/**
+ * Compra directa (precio fijo, con o sin "hacer oferta") o subasta. Van
+ * separadas porque son dos decisiones distintas: en una el precio es el que
+ * ves, en la otra es una puja que todavía puede subir. Precio fijo y "acepta
+ * oferta" van juntos: en ambos se compra hoy a un precio conocido, la oferta
+ * solo lo puede bajar.
+ */
+export type DealFormat = "buyNow" | "auction";
 
-export function dealFormat(deal: Deal): Exclude<DealFormat, "any"> {
-  if (deal.isAuction) return "auction";
-  if (deal.hasBestOffer) return "offer";
-  return "fixed";
+export function dealFormat(deal: Deal): DealFormat {
+  return deal.isAuction ? "auction" : "buyNow";
 }
 
 export interface DealsRepository {
