@@ -55,10 +55,9 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useD
       </div>
 
       <div class="meta">
-        <span v-if="countdown" class="countdown mono" :class="{ urgent: countdown.urgent, over: countdown.over }">
-          {{ countdown.over ? "cerrada" : `cierra en ${countdown.text}` }}
+        <span v-if="countdown" class="countdown mono" :data-level="countdown.level">
+          {{ countdown.over ? "cerrada" : `⏳ ${countdown.text}` }}
         </span>
-        <span v-else-if="deal.isAuction" class="countdown mono">subasta</span>
         <span v-if="seller" class="seller mono" :title="deal.sellerUsername ?? ''">{{ seller }}</span>
         <span class="label">vista hace {{ seenAgo }}</span>
       </div>
@@ -272,17 +271,28 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useD
   gap: 3px;
   text-align: right;
 }
+/* El cierre es el dato que decide en una subasta, así que se lee antes que la
+   reputación del vendedor o cuándo se detectó. */
 .countdown {
-  font-size: 11.5px;
-  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
   white-space: nowrap;
 }
-.countdown.urgent {
-  color: var(--urgent);
-  font-weight: 600;
+.countdown[data-level="soon"] {
+  color: var(--warn);
 }
-.countdown.over {
+.countdown[data-level="urgent"],
+.countdown[data-level="critical"] {
+  color: var(--urgent);
+}
+.countdown[data-level="unknown"] {
   color: var(--ink-3);
+  font-weight: 400;
+}
+.countdown[data-level="over"] {
+  color: var(--ink-3);
+  font-weight: 400;
   text-decoration: line-through;
 }
 .seller {

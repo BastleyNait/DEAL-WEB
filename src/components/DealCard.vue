@@ -27,14 +27,9 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useD
 
         <!-- El cierre de una subasta es información urgente: va sobre la foto,
              donde se ve antes que cualquier otra cosa de la tarjeta. -->
-        <span
-          v-if="countdown"
-          class="format mono"
-          :class="{ urgent: countdown.urgent, over: countdown.over }"
-        >
-          {{ countdown.over ? "cerrada" : countdown.text }}
+        <span v-if="countdown" class="format mono" :data-level="countdown.level">
+          {{ countdown.over ? "cerrada" : `⏳ ${countdown.text}` }}
         </span>
-        <span v-else-if="deal.isAuction" class="format mono">subasta</span>
         <span v-else-if="deal.hasBestOffer" class="format mono negotiable">acepta oferta</span>
       </div>
 
@@ -59,6 +54,12 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useD
             <span class="score-value mono">{{ deal.score ?? "—" }}</span>
             <span class="label">pts</span>
           </div>
+        </div>
+
+        <!-- En una subasta el cierre decide si hay que pujar ya o se puede
+             mirar mañana, así que va junto al precio y no solo sobre la foto. -->
+        <div v-if="countdown" class="closing mono" :data-level="countdown.level">
+          {{ countdown.over ? "Subasta cerrada" : `Cierra en ${countdown.text}` }}
         </div>
 
         <div class="footer">
@@ -188,14 +189,43 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useD
   color: var(--link);
   border-color: var(--link);
 }
-.format.urgent {
+/* Escalones de urgencia: cuanto menos queda, más grita. */
+.format[data-level="soon"] {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+.format[data-level="urgent"],
+.format[data-level="critical"] {
   color: var(--urgent);
   border-color: var(--urgent);
   font-weight: 600;
 }
-.format.over {
+.format[data-level="over"] {
   color: var(--ink-3);
   text-decoration: line-through;
+}
+
+.closing {
+  font-size: 11.5px;
+  font-weight: 500;
+  text-align: center;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: var(--ink-2);
+  background: var(--surface-sunk);
+}
+.closing[data-level="soon"] {
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+.closing[data-level="urgent"],
+.closing[data-level="critical"] {
+  color: var(--urgent);
+  background: var(--urgent-soft);
+  font-weight: 600;
+}
+.closing[data-level="over"] {
+  color: var(--ink-3);
 }
 
 .body {

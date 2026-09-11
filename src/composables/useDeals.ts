@@ -1,4 +1,4 @@
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import type { Deal, DealFormat, DealsRepository, DealSortBy, DealView } from "../domain/types";
 import { dealFormat, needsReview } from "../domain/types";
 
@@ -24,6 +24,14 @@ export function useDeals(repository: DealsRepository, isSeen: (itemId: string) =
   const sortBy = ref<DealSortBy>("score");
   const query = ref("");
 
+  // Al pasar a subastas, lo que importa es qué cierra antes — ordenar por
+  // puntaje dejaría arriba cosas que terminan en una semana. Solo se cambia si
+  // el orden estaba en el valor por defecto: una elección explícita se respeta.
+  watch(format, (next, previous) => {
+    if (next === "auction" && sortBy.value === "score") sortBy.value = "ending";
+    else if (previous === "auction" && next === "buyNow" && sortBy.value === "ending") sortBy.value = "score";
+  });
+
   let intervalId: ReturnType<typeof setInterval> | undefined;
 
   async function load() {
@@ -40,6 +48,11 @@ export function useDeals(repository: DealsRepository, isSeen: (itemId: string) =
 
   const visibleDeals = computed(() => {
     let list = deals.value;
+
+    // Una subasta que ya cerró no se puede pujar: no es una oferta, es historia.
+    if (format.value === "auction") {
+      list = list.filter((d) => !d.endDate || new Date(d.endDate).getTime() > Date.now());
+    }
 
     if (view.value === "unseen") list = list.filter((d) => !isSeen(d.itemId));
     if (view.value === "great") list = list.filter((d) => d.isGreatDeal);
@@ -72,7 +85,11 @@ export function useDeals(repository: DealsRepository, isSeen: (itemId: string) =
 
   const counts = computed(() => {
     const buyNow = deals.value.filter((d) => dealFormat(d) === "buyNow");
-    const auction = deals.value.filter((d) => dealFormat(d) === "auction");
+    // Mismo criterio que la lista: las cerradas no cuentan, si no el conmutador
+    // promete subastas que después no aparecen.
+    const auction = deals.value.filter(
+      (d) => dealFormat(d) === "auction" && (!d.endDate || new Date(d.endDate).getTime() > Date.now()),
+    );
     // Los contadores de vista cuentan dentro del formato activo: decir
     // "Sin ver 234" cuando en pantalla hay 160 sería mentir.
     const scoped = format.value === "auction" ? auction : buyNow;

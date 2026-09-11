@@ -36,18 +36,27 @@ export function useDealPresentation(
     return "low";
   });
 
+  /**
+   * En una subasta el tiempo que queda es lo que decide si hay que actuar ya o
+   * se puede mirar mañana, así que además del texto se expone un nivel de
+   * urgencia para poder codificarlo en color.
+   */
   const countdown = computed(() => {
     const d = toValue(deal);
-    if (!d.isAuction || !d.endDate) return null;
+    if (!d.isAuction) return null;
+    if (!d.endDate) return { text: "cierre desconocido", level: "unknown" as const, over: false };
+
     const msLeft = new Date(d.endDate).getTime() - toValue(now);
-    if (msLeft <= 0) return { text: "cerrada", urgent: false, over: true };
+    if (msLeft <= 0) return { text: "cerrada", level: "over" as const, over: true };
 
     const minutes = Math.floor(msLeft / 60_000);
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
 
-    const text = days > 0 ? `${days}d ${hours % 24}h` : hours > 0 ? `${hours}h ${minutes % 60}m` : `${minutes}m`;
-    return { text, urgent: hours < 6, over: false };
+    const text = days > 0 ? `${days}d ${hours % 24}h` : hours > 0 ? `${hours}h ${minutes % 60}m` : `${minutes} min`;
+    const level = hours < 1 ? "critical" : hours < 6 ? "urgent" : hours < 24 ? "soon" : "normal";
+
+    return { text, level, over: false } as const;
   });
 
   const seller = computed(() => {

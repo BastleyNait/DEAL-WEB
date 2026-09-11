@@ -153,7 +153,7 @@ onUnmounted(() => {
           <dl class="meta">
             <div v-if="countdown">
               <dt class="label">cierre</dt>
-              <dd :class="{ urgent: countdown.urgent }">
+              <dd class="countdown" :data-level="countdown.level">
                 {{ countdown.over ? "cerrada" : `en ${countdown.text}` }}
               </dd>
             </div>
@@ -454,7 +454,12 @@ onUnmounted(() => {
   margin: 0;
   font-size: 12.5px;
 }
-.meta .urgent {
+.meta .countdown[data-level="soon"] {
+  color: var(--warn);
+  font-weight: 600;
+}
+.meta .countdown[data-level="urgent"],
+.meta .countdown[data-level="critical"] {
   color: var(--urgent);
   font-weight: 600;
 }
