@@ -14,7 +14,7 @@ const props = defineProps<{
   hasNext: boolean;
   position: string;
 }>();
-const emit = defineEmits<{ close: []; toggleSeen: [string]; prev: []; next: [] }>();
+const emit = defineEmits<{ close: []; toggleSeen: [string]; prev: []; next: []; publish: [string] }>();
 
 // El detalle pesado se pide recién al abrir, no viene en el listado.
 const detail = ref<DealDetail | null>(null);
@@ -206,6 +206,7 @@ onUnmounted(() => {
         <button type="button" class="ghost" @click="emit('toggleSeen', deal.itemId)">
           {{ seen ? "Marcar como no vista" : "Marcar como vista" }}
         </button>
+        <button type="button" class="ghost publish" @click="emit('publish', deal.url)">Publicar</button>
         <a class="primary" :href="deal.url" target="_blank" rel="noopener noreferrer">Abrir en eBay ↗</a>
       </footer>
     </div>
@@ -624,6 +625,13 @@ onUnmounted(() => {
 .ghost:hover {
   color: var(--ink);
   border-color: var(--link);
+}
+.ghost.publish {
+  color: var(--link);
+  border-color: var(--link);
+}
+.ghost.publish:hover {
+  background: var(--link-soft);
 }
 .primary {
   color: var(--surface);

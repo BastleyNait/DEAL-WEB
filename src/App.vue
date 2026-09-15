@@ -2,15 +2,19 @@
 import { computed, ref } from "vue";
 import { SupabaseDealsRepository } from "./infrastructure/SupabaseDealsRepository";
 import { SupabaseSeenRepository } from "./infrastructure/SupabaseSeenRepository";
+import { SupabasePublishClient } from "./infrastructure/SupabasePublishClient";
+import { SupabasePublicationStatusRepository } from "./infrastructure/SupabasePublicationStatusRepository";
 import { useDeals } from "./composables/useDeals";
 import { useClock } from "./composables/useClock";
 import { useTheme } from "./composables/useTheme";
 import { useLayout } from "./composables/useLayout";
 import { useSeenDeals } from "./composables/useSeenDeals";
+import { usePublications } from "./composables/usePublications";
 import DeskHeader from "./components/DeskHeader.vue";
 import Toolbar from "./components/Toolbar.vue";
 import DealList from "./components/DealList.vue";
 import DealDetail from "./components/DealDetail.vue";
+import PublishPanel from "./components/PublishPanel.vue";
 import type { Deal } from "./domain/types";
 
 // Tope de presupuesto del backend (search_config.maxPriceUsd): cada precio se
@@ -32,6 +36,27 @@ const { deals, loading, error, lastUpdated, view, format, sortBy, query, visible
 const now = useClock();
 const { toggle: toggleTheme } = useTheme();
 const { layout, columns } = useLayout();
+
+// Publicación en un click: link de eBay -> borrador en la tienda propia (y a
+// futuro Facebook, vía el worker local que consume la cola de `publications`).
+const publishToken = import.meta.env.VITE_PUBLISH_TOKEN ?? "";
+const publishClient = new SupabasePublishClient(supabaseUrl, publishToken);
+const { byItemId: publishedByItemId, reload: reloadPublications } = usePublications(
+  new SupabasePublicationStatusRepository(supabaseUrl, anonKey),
+);
+const isPublished = (itemId: string) => publishedByItemId.value.has(itemId);
+
+const publishOpen = ref(false);
+const publishPrefillUrl = ref<string | undefined>(undefined);
+
+function openPublish(url?: string) {
+  publishPrefillUrl.value = url;
+  publishOpen.value = true;
+}
+function closePublish() {
+  publishOpen.value = false;
+  publishPrefillUrl.value = undefined;
+}
 
 // Abrir el detalle cuenta como haberla revisado.
 const openedDeal = ref<Deal | null>(null);
@@ -93,6 +118,7 @@ const emptyHint = computed(() => {
       :sync-error="syncError"
       @refresh="reload"
       @toggle-theme="toggleTheme"
+      @publish="openPublish()"
     />
 
     <Toolbar
@@ -121,6 +147,7 @@ const emptyHint = computed(() => {
         :layout="layout"
         :columns="columns"
         :is-seen="isSeen"
+        :is-published="isPublished"
         :empty-hint="emptyHint"
         @open="openDeal"
         @toggle-seen="toggleSeen"
@@ -141,6 +168,15 @@ const emptyHint = computed(() => {
       @toggle-seen="toggleSeen"
       @prev="stepDeal(-1)"
       @next="stepDeal(1)"
+      @publish="openPublish"
+    />
+
+    <PublishPanel
+      v-if="publishOpen"
+      :client="publishClient"
+      :prefilled-url="publishPrefillUrl"
+      @close="closePublish"
+      @published="reloadPublications"
     />
   </template>
 </template>

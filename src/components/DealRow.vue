@@ -3,7 +3,7 @@ import type { Deal } from "../domain/types";
 import { brandInitials } from "../domain/listing-specs";
 import { useDealPresentation } from "../composables/useDealPresentation";
 
-const props = defineProps<{ deal: Deal; budget: number; now: number; seen: boolean }>();
+const props = defineProps<{ deal: Deal; budget: number; now: number; seen: boolean; published: boolean }>();
 const emit = defineEmits<{ open: [Deal]; toggleSeen: [string] }>();
 
 const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checkedAgo, bids } = useDealPresentation(
@@ -36,6 +36,7 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
           </span>
           <span v-for="spec in specs" :key="spec" class="spec">{{ spec }}</span>
           <span v-if="deal.condition" class="spec spec-condition">{{ deal.condition }}</span>
+          <span v-if="published" class="spec spec-published">🏬 en tienda</span>
         </div>
         <p v-if="flags.length > 0" class="flags">{{ flags.join(" · ") }}</p>
       </div>
@@ -210,6 +211,11 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
   color: var(--link);
   background: var(--link-soft);
   font-weight: 500;
+}
+.spec-published {
+  color: var(--good);
+  background: transparent;
+  border: 1px solid var(--good);
 }
 .flags {
   margin: 6px 0 0;

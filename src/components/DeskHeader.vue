@@ -6,7 +6,7 @@ defineProps<{
   syncError: string | null;
 }>();
 
-const emit = defineEmits<{ refresh: []; toggleTheme: [] }>();
+const emit = defineEmits<{ refresh: []; toggleTheme: []; publish: [] }>();
 </script>
 
 <template>
@@ -44,6 +44,7 @@ const emit = defineEmits<{ refresh: []; toggleTheme: [] }>();
       <span v-else class="stamp label">
         {{ loading ? "buscando…" : lastUpdated ? `últ. lectura ${lastUpdated.toLocaleTimeString()}` : "sin leer" }}
       </span>
+      <button type="button" class="ghost publish" @click="emit('publish')">+ Publicar</button>
       <button type="button" class="ghost" @click="emit('refresh')">Actualizar</button>
       <button type="button" class="ghost icon" title="Cambiar tema" @click="emit('toggleTheme')">◐</button>
     </div>
@@ -130,6 +131,13 @@ const emit = defineEmits<{ refresh: []; toggleTheme: [] }>();
 }
 .icon {
   padding: 5px 9px;
+}
+.publish {
+  color: var(--link);
+  border-color: var(--link);
+}
+.publish:hover {
+  background: var(--link-soft);
 }
 
 @media (max-width: 720px) {

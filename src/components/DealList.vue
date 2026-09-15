@@ -10,6 +10,7 @@ defineProps<{
   layout: DealLayout;
   columns: number;
   isSeen: (itemId: string) => boolean;
+  isPublished: (itemId: string) => boolean;
   emptyHint: string;
 }>();
 
@@ -34,6 +35,7 @@ const emit = defineEmits<{ open: [Deal]; toggleSeen: [string] }>();
         :budget="budget"
         :now="now"
         :seen="isSeen(deal.itemId)"
+        :published="isPublished(deal.itemId)"
         @open="emit('open', $event)"
         @toggle-seen="emit('toggleSeen', $event)"
       />
@@ -43,6 +45,7 @@ const emit = defineEmits<{ open: [Deal]; toggleSeen: [string] }>();
         :budget="budget"
         :now="now"
         :seen="isSeen(deal.itemId)"
+        :published="isPublished(deal.itemId)"
         @open="emit('open', $event)"
         @toggle-seen="emit('toggleSeen', $event)"
       />
