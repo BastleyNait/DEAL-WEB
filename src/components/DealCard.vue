@@ -6,7 +6,7 @@ import { useDealPresentation } from "../composables/useDealPresentation";
 const props = defineProps<{ deal: Deal; budget: number; now: number; seen: boolean }>();
 const emit = defineEmits<{ open: [Deal]; toggleSeen: [string] }>();
 
-const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useDealPresentation(
+const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checkedAgo, bids } = useDealPresentation(
   () => props.deal,
   () => props.budget,
   () => props.now,
@@ -56,6 +56,12 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useD
           </div>
         </div>
 
+        <p class="checked">
+          {{ deal.isAuction ? `puja actual${bids ? ` · ${bids}` : ""} · ` : "" }}{{
+            checkedAgo ? `verificado hace ${checkedAgo}` : "sin verificar"
+          }}
+        </p>
+
         <!-- En una subasta el cierre decide si hay que pujar ya o se puede
              mirar mañana, así que va junto al precio y no solo sobre la foto. -->
         <div v-if="countdown" class="closing mono" :data-level="countdown.level">
@@ -63,7 +69,7 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useD
         </div>
 
         <div class="footer">
-          <span v-if="overBudget" class="label over">sobre tope · negociar</span>
+          <span v-if="overBudget" class="label over">{{ deal.isAuction ? "ya pasó tu tope" : "sobre tope · negociar" }}</span>
           <span v-else-if="seller" class="seller mono">{{ seller }}</span>
           <span v-else></span>
           <span class="label">hace {{ seenAgo }}</span>
@@ -312,6 +318,12 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useD
   color: var(--ink);
 }
 .score[data-tone="low"] .score-value {
+  color: var(--ink-3);
+}
+
+.checked {
+  margin: -4px 0 0;
+  font-size: 10.5px;
   color: var(--ink-3);
 }
 

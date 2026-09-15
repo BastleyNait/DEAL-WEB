@@ -67,14 +67,32 @@ export function useDealPresentation(
     return [sales, rating].filter(Boolean).join(" · ");
   });
 
-  const seenAgo = computed(() => {
-    const minutes = Math.floor((toValue(now) - new Date(toValue(deal).firstSeenAt).getTime()) / 60_000);
+  function ago(iso: string): string {
+    const minutes = Math.floor((toValue(now) - new Date(iso).getTime()) / 60_000);
     if (minutes < 1) return "recién";
     if (minutes < 60) return `${minutes} min`;
     const hours = Math.floor(minutes / 60);
     if (hours < 24) return `${hours} h`;
     return `${Math.floor(hours / 24)} d`;
+  }
+
+  const seenAgo = computed(() => ago(toValue(deal).firstSeenAt));
+
+  /**
+   * Qué tan viejo es el precio. En una subasta cambia cada minuto y en una
+   * compra directa puede venderse en cualquier momento, así que mostrar el
+   * número sin su antigüedad hacía creer que estaba al día.
+   */
+  const checkedAgo = computed(() => {
+    const checked = toValue(deal).priceCheckedAt;
+    return checked ? ago(checked) : null;
   });
 
-  return { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo };
+  const bids = computed(() => {
+    const d = toValue(deal);
+    if (!d.isAuction || d.bidCount == null) return null;
+    return d.bidCount === 1 ? "1 puja" : `${d.bidCount} pujas`;
+  });
+
+  return { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checkedAgo, bids };
 }

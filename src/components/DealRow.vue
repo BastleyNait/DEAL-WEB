@@ -6,7 +6,7 @@ import { useDealPresentation } from "../composables/useDealPresentation";
 const props = defineProps<{ deal: Deal; budget: number; now: number; seen: boolean }>();
 const emit = defineEmits<{ open: [Deal]; toggleSeen: [string] }>();
 
-const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useDealPresentation(
+const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checkedAgo, bids } = useDealPresentation(
   () => props.deal,
   () => props.budget,
   () => props.now,
@@ -44,9 +44,10 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useD
         <div class="price mono">
           <span class="currency">$</span>{{ Math.round(deal.price ?? 0) }}
         </div>
-        <span v-if="deal.isAuction" class="price-note">puja actual</span>
+        <span v-if="deal.isAuction" class="price-note">puja actual{{ bids ? ` · ${bids}` : "" }}</span>
         <span v-else-if="deal.hasBestOffer" class="price-note negotiable">acepta oferta</span>
-        <span v-if="overBudget" class="price-note over">sobre tope · negociar</span>
+        <span v-if="overBudget" class="price-note over">{{ deal.isAuction ? "ya pasó tu tope" : "sobre tope · negociar" }}</span>
+        <span class="price-note checked">{{ checkedAgo ? `verificado hace ${checkedAgo}` : "sin verificar" }}</span>
       </div>
 
       <div class="score" :data-tone="scoreTone">
@@ -242,6 +243,9 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useD
 }
 .price-note.over {
   color: var(--warn);
+}
+.price-note.checked {
+  font-size: 10px;
 }
 
 .score {

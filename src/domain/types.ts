@@ -29,6 +29,13 @@ export interface Deal {
   url: string;
   imageUrl: string | null;
   firstSeenAt: string;
+  /** Pujas de la subasta. Null en compra directa o si todavía no se consultó. */
+  bidCount: number | null;
+  /**
+   * Última vez que el backend confirmó con eBay el precio y que sigue a la
+   * venta. Lo vendido ya no llega: la vista lo filtra.
+   */
+  priceCheckedAt: string | null;
 }
 
 export type DealSortBy = "score" | "price" | "date" | "ending";

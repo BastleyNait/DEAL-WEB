@@ -30,6 +30,8 @@ interface DealRow {
   url: string;
   image_url: string | null;
   first_seen_at: string;
+  bid_count: number | null;
+  price_checked_at: string | null;
 }
 
 function toDeal(row: DealRow): Deal {
@@ -55,6 +57,8 @@ function toDeal(row: DealRow): Deal {
     url: row.url,
     imageUrl: row.image_url,
     firstSeenAt: row.first_seen_at,
+    bidCount: row.bid_count,
+    priceCheckedAt: row.price_checked_at,
   };
 }
 

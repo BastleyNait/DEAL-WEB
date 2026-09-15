@@ -39,7 +39,7 @@ const descriptionHtml = computed(() => {
   return null;
 });
 
-const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo } = useDealPresentation(
+const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checkedAgo, bids } = useDealPresentation(
   () => props.deal,
   () => props.budget,
   () => props.now,
@@ -138,7 +138,7 @@ onUnmounted(() => {
                 <span class="currency">$</span>{{ Math.round(deal.price ?? 0) }}
                 <span class="unit label">{{ deal.currency }}</span>
               </div>
-              <p v-if="deal.isAuction" class="price-note">puja actual, puede subir</p>
+              <p v-if="deal.isAuction" class="price-note">puja actual{{ bids ? ` con ${bids}` : "" }}, puede subir</p>
               <p v-else-if="deal.hasBestOffer" class="price-note negotiable">se puede ofertar por menos</p>
               <p v-if="overBudget" class="price-note over">por encima de tu tope de ${{ budget }}</p>
             </div>
@@ -160,6 +160,10 @@ onUnmounted(() => {
             <div v-if="seller">
               <dt class="label">vendedor</dt>
               <dd>{{ deal.sellerUsername ?? "—" }} <span class="soft">({{ seller }})</span></dd>
+            </div>
+            <div>
+              <dt class="label">precio verificado</dt>
+              <dd>{{ checkedAgo ? `hace ${checkedAgo}` : "todavía no" }}</dd>
             </div>
             <div>
               <dt class="label">detectada</dt>
