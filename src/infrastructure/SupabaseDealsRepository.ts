@@ -1,5 +1,8 @@
 import type { Deal, DealDetail, DealsRepository, ListingAspect } from "../domain/types";
 
+// Tope de filas por respuesta de la API REST de Supabase (max_rows).
+const PAGE_SIZE = 1000;
+
 interface DetailRow {
   item_id: string;
   seller_description: string | null;
@@ -32,6 +35,7 @@ interface DealRow {
   first_seen_at: string;
   bid_count: number | null;
   price_checked_at: string | null;
+  special_label: string | null;
 }
 
 function toDeal(row: DealRow): Deal {
@@ -59,6 +63,7 @@ function toDeal(row: DealRow): Deal {
     firstSeenAt: row.first_seen_at,
     bidCount: row.bid_count,
     priceCheckedAt: row.price_checked_at,
+    specialLabel: row.special_label ?? null,
   };
 }
 
@@ -73,20 +78,35 @@ export class SupabaseDealsRepository implements DealsRepository {
     private readonly anonKey: string,
   ) {}
 
+  /**
+   * De a páginas: la API REST de Supabase corta cada respuesta en 1.000
+   * filas sin avisar, y deals_public ya pasó ese número (1.714 al momento de
+   * este cambio). Con una sola consulta, el dashboard descartaba en silencio
+   * todo lo de menor puntaje — incluidas ofertas especiales, que se muestran
+   * aunque tengan puntaje bajo. El item_id al final del orden hace que el
+   * corte entre páginas sea estable (sin repetidos ni huecos).
+   */
   async listDeals(): Promise<Deal[]> {
-    const url = `${this.supabaseUrl}/rest/v1/deals_public?select=*&order=score.desc.nullslast,first_seen_at.desc`;
-    const res = await fetch(url, {
-      headers: {
-        apikey: this.anonKey,
-        Authorization: `Bearer ${this.anonKey}`,
-      },
-    });
+    const rows: DealRow[] = [];
+    for (let offset = 0; ; offset += PAGE_SIZE) {
+      const url =
+        `${this.supabaseUrl}/rest/v1/deals_public?select=*` +
+        `&order=score.desc.nullslast,first_seen_at.desc,item_id.asc&limit=${PAGE_SIZE}&offset=${offset}`;
+      const res = await fetch(url, {
+        headers: {
+          apikey: this.anonKey,
+          Authorization: `Bearer ${this.anonKey}`,
+        },
+      });
 
-    if (!res.ok) {
-      throw new Error(`No se pudo leer deals_public (${res.status}): ${await res.text()}`);
+      if (!res.ok) {
+        throw new Error(`No se pudo leer deals_public (${res.status}): ${await res.text()}`);
+      }
+
+      const page = (await res.json()) as DealRow[];
+      rows.push(...page);
+      if (page.length < PAGE_SIZE) break;
     }
-
-    const rows = (await res.json()) as DealRow[];
     return rows.map(toDeal);
   }
 

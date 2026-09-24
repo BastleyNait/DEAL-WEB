@@ -36,11 +36,16 @@ export interface Deal {
    * venta. Lo vendido ya no llega: la vista lo filtra.
    */
   priceCheckedAt: string | null;
+  /**
+   * Modelo "oferta especial" que matcheó (ej. "Dynabook Portégé serie J"), o
+   * null. Poco conocidos pero de lo mejor en su rango de precio: van primero.
+   */
+  specialLabel: string | null;
 }
 
 export type DealSortBy = "score" | "price" | "date" | "ending";
 
-export type DealView = "unseen" | "all" | "great" | "review";
+export type DealView = "unseen" | "all" | "special" | "great" | "review";
 
 /** Lista densa para escanear muchas, grilla para comparar el estado visual. */
 export type DealLayout = "list" | "grid";

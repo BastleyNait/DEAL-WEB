@@ -101,6 +101,9 @@ onUnmounted(() => {
         <div class="head-main">
           <h2>{{ deal.title }}</h2>
           <div class="badges">
+            <span v-if="deal.specialLabel" class="badge special" :title="`${deal.specialLabel}: poco conocida, de lo mejor en su rango de precio`">
+              💎 Oferta especial · {{ deal.specialLabel }}
+            </span>
             <span v-if="deal.isPriority" class="badge link">★ CPU prioritaria</span>
             <span v-if="deal.isGreatDeal" class="badge good">Ofertaza</span>
             <span v-if="deal.isAuction" class="badge">Subasta</span>
@@ -307,6 +310,12 @@ onUnmounted(() => {
 .badge.link {
   color: var(--link);
   border-color: var(--link);
+}
+.badge.special {
+  color: var(--special);
+  border-color: var(--special);
+  background: var(--special-soft);
+  font-weight: 600;
 }
 .close {
   font: inherit;

@@ -13,6 +13,7 @@ defineProps<{
   counts: {
     unseen: number;
     all: number;
+    special: number;
     great: number;
     review: number;
     buyNow: number;
@@ -24,6 +25,7 @@ defineProps<{
 const VIEWS: { id: DealView; label: string }[] = [
   { id: "unseen", label: "Sin ver" },
   { id: "all", label: "Todas" },
+  { id: "special", label: "💎 Especiales" },
   { id: "great", label: "Ofertazas" },
   { id: "review", label: "A revisar" },
 ];

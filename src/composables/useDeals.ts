@@ -55,6 +55,7 @@ export function useDeals(repository: DealsRepository, isSeen: (itemId: string) =
     }
 
     if (view.value === "unseen") list = list.filter((d) => !isSeen(d.itemId));
+    if (view.value === "special") list = list.filter((d) => d.specialLabel);
     if (view.value === "great") list = list.filter((d) => d.isGreatDeal);
     if (view.value === "review") list = list.filter(needsReview);
     list = list.filter((d) => dealFormat(d) === format.value);
@@ -75,9 +76,11 @@ export function useDeals(repository: DealsRepository, isSeen: (itemId: string) =
         const bEnd = b.endDate ? new Date(b.endDate).getTime() : Infinity;
         return aEnd - bEnd;
       }
-      // Orden por defecto: las CPUs prioritarias arriba de todo, y dentro de
-      // cada grupo por puntaje. Los otros órdenes se respetan tal cual: si
-      // pediste por precio, querés ver el precio, no la prioridad.
+      // Orden por defecto: las ofertas especiales arriba de todo, después las
+      // CPUs prioritarias, y dentro de cada grupo por puntaje. Los otros
+      // órdenes se respetan tal cual: si pediste por precio, querés ver el
+      // precio, no la prioridad.
+      if (Boolean(a.specialLabel) !== Boolean(b.specialLabel)) return a.specialLabel ? -1 : 1;
       if (a.isPriority !== b.isPriority) return a.isPriority ? -1 : 1;
       return (b.score ?? 0) - (a.score ?? 0);
     });
@@ -97,6 +100,7 @@ export function useDeals(repository: DealsRepository, isSeen: (itemId: string) =
     return {
       all: scoped.length,
       unseen: scoped.filter((d) => !isSeen(d.itemId)).length,
+      special: scoped.filter((d) => d.specialLabel).length,
       great: scoped.filter((d) => d.isGreatDeal).length,
       review: scoped.filter(needsReview).length,
       buyNow: buyNow.length,

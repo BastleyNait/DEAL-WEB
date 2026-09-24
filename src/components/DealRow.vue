@@ -18,7 +18,7 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
     <button
       type="button"
       class="row"
-      :class="{ 'is-great': deal.isGreatDeal, 'needs-review': flags.length > 0 }"
+      :class="{ 'is-special': deal.specialLabel, 'is-great': deal.isGreatDeal, 'needs-review': flags.length > 0 }"
       @click="emit('open', deal)"
     >
       <span class="stripe" aria-hidden="true"></span>
@@ -31,6 +31,7 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
       <div class="main">
         <h3 class="title">{{ deal.title }}</h3>
         <div class="specs">
+          <span v-if="deal.specialLabel" class="spec spec-special" :title="deal.specialLabel">💎 Especial</span>
           <span v-if="deal.cpuMatch" class="spec" :class="{ 'spec-priority': deal.isPriority }">
             {{ deal.isPriority ? "★ " : "" }}{{ deal.cpuMatch }}
           </span>
@@ -125,6 +126,11 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
 .row.needs-review .stripe {
   background: var(--warn);
 }
+/* Después de las otras dos a propósito: una especial se marca como especial
+   aunque también sea ofertaza o tenga algo para revisar. */
+.row.is-special .stripe {
+  background: var(--special);
+}
 
 .seen-toggle {
   position: absolute;
@@ -211,6 +217,11 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
   color: var(--link);
   background: var(--link-soft);
   font-weight: 500;
+}
+.spec-special {
+  color: var(--special);
+  background: var(--special-soft);
+  font-weight: 600;
 }
 .spec-published {
   color: var(--good);
