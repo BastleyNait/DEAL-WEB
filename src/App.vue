@@ -96,7 +96,7 @@ const emptyHint = computed(() => {
   if (format.value === "auction") return "No hay subastas abiertas que cumplan el criterio.";
   if (view.value === "unseen") return "Ya revisaste todas las ofertas guardadas. Van a aparecer nuevas en el próximo barrido.";
   if (view.value === "special")
-    return "Ahora mismo no hay ninguna Dynabook Portégé serie J/K disponible. Son pocas en todo eBay: el cazador las busca en cada pasada.";
+    return "Ahora mismo no hay ninguna laptop 2 en 1 disponible que cumpla el criterio. El cazador las busca en cada pasada.";
   if (view.value === "great") return "Todavía no apareció ninguna por debajo de $160 ni con puntaje alto.";
   if (view.value === "review") return "Ninguna oferta quedó con datos faltantes: todas traen descripción y batería.";
   return "El cazador todavía no guardó ofertas. Corré la función hunt-deals o esperá al próximo barrido.";

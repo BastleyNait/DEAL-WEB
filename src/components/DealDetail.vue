@@ -101,8 +101,8 @@ onUnmounted(() => {
         <div class="head-main">
           <h2>{{ deal.title }}</h2>
           <div class="badges">
-            <span v-if="deal.specialLabel" class="badge special" :title="`${deal.specialLabel}: poco conocida, de lo mejor en su rango de precio`">
-              💎 Oferta especial · {{ deal.specialLabel }}
+            <span v-if="deal.specialLabel" class="badge special" title="Convertible: se usa como laptop y como tablet">
+              🔄 Oferta {{ deal.specialLabel }}
             </span>
             <span v-if="deal.isPriority" class="badge link">★ CPU prioritaria</span>
             <span v-if="deal.isGreatDeal" class="badge good">Ofertaza</span>

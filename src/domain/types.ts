@@ -37,8 +37,8 @@ export interface Deal {
    */
   priceCheckedAt: string | null;
   /**
-   * Modelo "oferta especial" que matcheó (ej. "Dynabook Portégé serie J"), o
-   * null. Poco conocidos pero de lo mejor en su rango de precio: van primero.
+   * Tipo de oferta especial que matcheó, hoy "2 en 1" (laptop convertible), o
+   * null. Se avisan aunque puntúen bajo, y van primero en el orden.
    */
   specialLabel: string | null;
 }

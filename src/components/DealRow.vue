@@ -31,7 +31,9 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
       <div class="main">
         <h3 class="title">{{ deal.title }}</h3>
         <div class="specs">
-          <span v-if="deal.specialLabel" class="spec spec-special" :title="deal.specialLabel">💎 Especial</span>
+          <span v-if="deal.specialLabel" class="spec spec-special" title="Convertible: se usa como laptop y como tablet">
+            🔄 {{ deal.specialLabel }}
+          </span>
           <span v-if="deal.cpuMatch" class="spec" :class="{ 'spec-priority': deal.isPriority }">
             {{ deal.isPriority ? "★ " : "" }}{{ deal.cpuMatch }}
           </span>
