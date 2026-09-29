@@ -101,8 +101,13 @@ onUnmounted(() => {
         <div class="head-main">
           <h2>{{ deal.title }}</h2>
           <div class="badges">
-            <span v-if="deal.specialLabel" class="badge special" title="Convertible: se usa como laptop y como tablet">
-              🔄 Oferta {{ deal.specialLabel }}
+            <span
+              v-if="deal.specialLabel"
+              class="badge special"
+              :class="{ low: deal.specialDemoted }"
+              :title="deal.specialDemoted ? 'Convertible, pero Dell: suelen llegar rayadas o rotas, revisá las fotos' : 'Convertible: se usa como laptop y como tablet'"
+            >
+              🔄 {{ deal.specialDemoted ? `${deal.specialLabel} · prioridad baja` : `Oferta ${deal.specialLabel}` }}
             </span>
             <span v-if="deal.isPriority" class="badge link">★ CPU prioritaria</span>
             <span v-if="deal.isGreatDeal" class="badge good">Ofertaza</span>
@@ -310,6 +315,12 @@ onUnmounted(() => {
 .badge.link {
   color: var(--link);
   border-color: var(--link);
+}
+.badge.special.low {
+  color: var(--ink-3);
+  border-color: var(--rule-strong);
+  background: transparent;
+  font-weight: 400;
 }
 .badge.special {
   color: var(--special);

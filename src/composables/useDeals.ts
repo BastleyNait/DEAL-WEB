@@ -1,6 +1,6 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import type { Deal, DealFormat, DealsRepository, DealSortBy, DealView } from "../domain/types";
-import { dealFormat, needsReview } from "../domain/types";
+import { dealFormat, isTopSpecial, needsReview } from "../domain/types";
 
 const AUTO_REFRESH_MS = 60_000;
 
@@ -80,7 +80,7 @@ export function useDeals(repository: DealsRepository, isSeen: (itemId: string) =
       // CPUs prioritarias, y dentro de cada grupo por puntaje. Los otros
       // órdenes se respetan tal cual: si pediste por precio, querés ver el
       // precio, no la prioridad.
-      if (Boolean(a.specialLabel) !== Boolean(b.specialLabel)) return a.specialLabel ? -1 : 1;
+      if (isTopSpecial(a) !== isTopSpecial(b)) return isTopSpecial(a) ? -1 : 1;
       if (a.isPriority !== b.isPriority) return a.isPriority ? -1 : 1;
       return (b.score ?? 0) - (a.score ?? 0);
     });

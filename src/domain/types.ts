@@ -41,6 +41,16 @@ export interface Deal {
    * null. Se avisan aunque puntúen bajo, y van primero en el orden.
    */
   specialLabel: string | null;
+  /**
+   * true si es 2 en 1 pero de prioridad baja (Dell: suelen llegar rayadas o
+   * rotas). Se ven en su pestaña, pero sin franja violeta y al final del orden.
+   */
+  specialDemoted: boolean;
+}
+
+/** 2 en 1 que sí encabeza: los de prioridad baja no cuentan. */
+export function isTopSpecial(deal: Pick<Deal, "specialLabel" | "specialDemoted">): boolean {
+  return Boolean(deal.specialLabel) && !deal.specialDemoted;
 }
 
 export type DealSortBy = "score" | "price" | "date" | "ending";

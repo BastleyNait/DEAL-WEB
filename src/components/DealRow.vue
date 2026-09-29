@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Deal } from "../domain/types";
+import { isTopSpecial } from "../domain/types";
 import { brandInitials } from "../domain/listing-specs";
 import { useDealPresentation } from "../composables/useDealPresentation";
 
@@ -18,7 +19,7 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
     <button
       type="button"
       class="row"
-      :class="{ 'is-special': deal.specialLabel, 'is-great': deal.isGreatDeal, 'needs-review': flags.length > 0 }"
+      :class="{ 'is-special': isTopSpecial(deal), 'is-great': deal.isGreatDeal, 'needs-review': flags.length > 0 }"
       @click="emit('open', deal)"
     >
       <span class="stripe" aria-hidden="true"></span>
@@ -31,7 +32,12 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
       <div class="main">
         <h3 class="title">{{ deal.title }}</h3>
         <div class="specs">
-          <span v-if="deal.specialLabel" class="spec spec-special" title="Convertible: se usa como laptop y como tablet">
+          <span
+            v-if="deal.specialLabel"
+            class="spec spec-special"
+            :class="{ 'spec-special-low': deal.specialDemoted }"
+            :title="deal.specialDemoted ? 'Convertible, pero Dell: suelen llegar maltratadas' : 'Convertible: se usa como laptop y como tablet'"
+          >
             🔄 {{ deal.specialLabel }}
           </span>
           <span v-if="deal.cpuMatch" class="spec" :class="{ 'spec-priority': deal.isPriority }">
@@ -219,6 +225,12 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
   color: var(--link);
   background: var(--link-soft);
   font-weight: 500;
+}
+/* Dell: sigue siendo 2 en 1, pero apagada — no compite con las otras. */
+.spec-special-low {
+  color: var(--ink-3);
+  background: var(--surface-sunk);
+  font-weight: 400;
 }
 .spec-special {
   color: var(--special);
