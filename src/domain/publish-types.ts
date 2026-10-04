@@ -27,16 +27,38 @@ export interface PublishClient {
     imageUrls: string[];
     queueForFacebook: boolean;
   }): Promise<PublishResult>;
+  /**
+   * Pasa a la cola de Facebook publicaciones que ya están en la tienda. Con ids
+   * encola esas (ninguna / fallida / salteada); sin ids solo reintenta las
+   * fallidas. Devuelve cuántas movió.
+   */
+  queueFacebook(itemIds?: string[]): Promise<number>;
 }
+
+export type FacebookStatus = "none" | "queued" | "posted" | "failed" | "skipped";
 
 export interface PublicationStatus {
   itemId: string;
+  title: string | null;
   storeSlug: string | null;
   storePublishedAt: string | null;
-  facebookStatus: "none" | "queued" | "posted" | "failed" | "skipped";
+  facebookStatus: FacebookStatus;
 }
 
 /** Puerto: qué ya se publicó, para no repetir y para la insignia en las tarjetas. */
 export interface PublicationStatusRepository {
   listAll(): Promise<PublicationStatus[]>;
+}
+
+/** Lo que hace el publicador local. "offline" no lo escribe él: se deduce de que dejó de latir. */
+export type PublisherState = "offline" | "idle" | "working" | "waiting_confirm";
+
+export interface PublisherStatus {
+  state: PublisherState;
+  currentTitle: string | null;
+}
+
+/** Puerto: ¿está encendido el publicador de tu PC y qué está haciendo? */
+export interface PublisherStatusRepository {
+  read(): Promise<PublisherStatus>;
 }

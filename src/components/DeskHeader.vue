@@ -1,12 +1,17 @@
 <script setup lang="ts">
+import type { PublisherState } from "../domain/publish-types";
+
 defineProps<{
   counts: { all: number; great: number; review: number; cheapest: number | null };
   lastUpdated: Date | null;
   loading: boolean;
   syncError: string | null;
+  /** Publicaciones esperando en la cola de Facebook y estado del publicador de tu PC. */
+  facebookQueued: number;
+  publisherState: PublisherState;
 }>();
 
-const emit = defineEmits<{ refresh: []; toggleTheme: []; publish: [] }>();
+const emit = defineEmits<{ refresh: []; toggleTheme: []; publish: []; facebook: [] }>();
 </script>
 
 <template>
@@ -45,6 +50,15 @@ const emit = defineEmits<{ refresh: []; toggleTheme: []; publish: [] }>();
         {{ loading ? "buscando…" : lastUpdated ? `últ. lectura ${lastUpdated.toLocaleTimeString()}` : "sin leer" }}
       </span>
       <button type="button" class="ghost publish" @click="emit('publish')">+ Publicar</button>
+      <button
+        type="button"
+        class="ghost facebook"
+        :title="publisherState === 'offline' ? 'Publicador apagado' : 'Publicador en línea'"
+        @click="emit('facebook')"
+      >
+        <span class="pdot" :class="publisherState" aria-hidden="true"></span>
+        📣 Facebook<span v-if="facebookQueued > 0" class="queued mono">{{ facebookQueued }}</span>
+      </button>
       <button type="button" class="ghost" @click="emit('refresh')">Actualizar</button>
       <button type="button" class="ghost icon" title="Cambiar tema" @click="emit('toggleTheme')">◐</button>
     </div>
@@ -138,6 +152,33 @@ const emit = defineEmits<{ refresh: []; toggleTheme: []; publish: [] }>();
 }
 .publish:hover {
   background: var(--link-soft);
+}
+
+.facebook {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pdot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-3);
+}
+.pdot.idle,
+.pdot.working {
+  background: var(--good);
+}
+.pdot.waiting_confirm {
+  background: var(--warn);
+}
+.queued {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--surface);
+  background: var(--link);
+  border-radius: 9px;
+  padding: 0 6px;
 }
 
 @media (max-width: 720px) {

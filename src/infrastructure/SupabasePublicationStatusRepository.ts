@@ -2,6 +2,7 @@ import type { PublicationStatus, PublicationStatusRepository } from "../domain/p
 
 interface PublicationRow {
   item_id: string;
+  title: string | null;
   store_slug: string | null;
   store_published_at: string | null;
   facebook_status: PublicationStatus["facebookStatus"];
@@ -23,6 +24,7 @@ export class SupabasePublicationStatusRepository implements PublicationStatusRep
     const rows = (await res.json()) as PublicationRow[];
     return rows.map((row) => ({
       itemId: row.item_id,
+      title: row.title,
       storeSlug: row.store_slug,
       storePublishedAt: row.store_published_at,
       facebookStatus: row.facebook_status,

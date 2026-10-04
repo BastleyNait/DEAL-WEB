@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { SupabaseDealsRepository } from "./infrastructure/SupabaseDealsRepository";
 import { SupabaseSeenRepository } from "./infrastructure/SupabaseSeenRepository";
 import { SupabasePublishClient } from "./infrastructure/SupabasePublishClient";
 import { SupabasePublicationStatusRepository } from "./infrastructure/SupabasePublicationStatusRepository";
+import { SupabasePublisherStatusRepository } from "./infrastructure/SupabasePublisherStatusRepository";
+import { usePublisherStatus } from "./composables/usePublisherStatus";
+import FacebookQueuePanel from "./components/FacebookQueuePanel.vue";
 import { useDeals } from "./composables/useDeals";
 import { useClock } from "./composables/useClock";
 import { useTheme } from "./composables/useTheme";
@@ -45,6 +48,32 @@ const { byItemId: publishedByItemId, reload: reloadPublications } = usePublicati
   new SupabasePublicationStatusRepository(supabaseUrl, anonKey),
 );
 const isPublished = (itemId: string) => publishedByItemId.value.has(itemId);
+
+// Facebook: el programa de tu PC (DEAL PUBLISHER) toma la cola y publica. Esta
+// página no puede encenderlo ni mirarlo directo: él avisa su estado y el
+// botón Iniciar abre un enlace que registraste una vez en tu PC.
+const {
+  status: publisherStatus,
+  loaded: publisherLoaded,
+  refresh: refreshPublisher,
+} = usePublisherStatus(new SupabasePublisherStatusRepository(supabaseUrl, anonKey));
+const publicationList = computed(() => [...publishedByItemId.value.values()]);
+const facebookQueued = computed(() => publicationList.value.filter((p) => p.facebookStatus === "queued").length);
+
+const facebookOpen = ref(false);
+// Con el panel abierto se mira más seguido: ahí se espera ver cambiar el estado.
+let fastPoll: ReturnType<typeof setInterval> | undefined;
+watch(facebookOpen, (open) => {
+  clearInterval(fastPoll);
+  if (!open) return;
+  refreshPublisher();
+  reloadPublications();
+  fastPoll = setInterval(() => {
+    refreshPublisher();
+    reloadPublications();
+  }, 4000);
+});
+onBeforeUnmount(() => clearInterval(fastPoll));
 
 const publishOpen = ref(false);
 const publishPrefillUrl = ref<string | undefined>(undefined);
@@ -120,7 +149,10 @@ const emptyHint = computed(() => {
       :sync-error="syncError"
       @refresh="reload"
       @toggle-theme="toggleTheme"
+      :facebook-queued="facebookQueued"
+      :publisher-state="publisherStatus.state"
       @publish="openPublish()"
+      @facebook="facebookOpen = true"
     />
 
     <Toolbar
@@ -179,6 +211,16 @@ const emptyHint = computed(() => {
       :prefilled-url="publishPrefillUrl"
       @close="closePublish"
       @published="reloadPublications"
+    />
+
+    <FacebookQueuePanel
+      v-if="facebookOpen"
+      :client="publishClient"
+      :publications="publicationList"
+      :publisher="publisherStatus"
+      :publisher-loaded="publisherLoaded"
+      @close="facebookOpen = false"
+      @changed="reloadPublications"
     />
   </template>
 </template>
