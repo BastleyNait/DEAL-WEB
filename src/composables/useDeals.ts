@@ -76,10 +76,11 @@ export function useDeals(repository: DealsRepository, isSeen: (itemId: string) =
         const bEnd = b.endDate ? new Date(b.endDate).getTime() : Infinity;
         return aEnd - bEnd;
       }
-      // Orden por defecto: las ofertas especiales arriba de todo, después las
-      // CPUs prioritarias, y dentro de cada grupo por puntaje. Los otros
-      // órdenes se respetan tal cual: si pediste por precio, querés ver el
-      // precio, no la prioridad.
+      // Orden por defecto: las OFERTAS URGENTES arriba de todo, después las
+      // especiales, las CPUs prioritarias, y dentro de cada grupo por puntaje.
+      // Los otros órdenes se respetan tal cual: si pediste por precio, querés
+      // ver el precio, no la prioridad.
+      if (a.isUrgent !== b.isUrgent) return a.isUrgent ? -1 : 1;
       if (isTopSpecial(a) !== isTopSpecial(b)) return isTopSpecial(a) ? -1 : 1;
       if (a.isPriority !== b.isPriority) return a.isPriority ? -1 : 1;
       return (b.score ?? 0) - (a.score ?? 0);

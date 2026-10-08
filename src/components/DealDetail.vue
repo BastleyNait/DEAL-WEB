@@ -101,6 +101,9 @@ onUnmounted(() => {
         <div class="head-main">
           <h2>{{ deal.title }}</h2>
           <div class="badges">
+            <span v-if="deal.isUrgent" class="badge urgent" title="16GB+ de RAM, SSD de 512GB+, CPU buscada y menos de $250">
+              💰 OFERTA URGENTE
+            </span>
             <span
               v-if="deal.specialLabel"
               class="badge special"
@@ -148,7 +151,7 @@ onUnmounted(() => {
               </div>
               <p v-if="deal.isAuction" class="price-note">puja actual{{ bids ? ` con ${bids}` : "" }}, puede subir</p>
               <p v-else-if="deal.hasBestOffer" class="price-note negotiable">se puede ofertar por menos</p>
-              <p v-if="overBudget" class="price-note over">por encima de tu tope de ${{ budget }}</p>
+              <p v-if="overBudget" class="price-note over">por encima de tu tope de ${{ budget }}<template v-if="deal.isUrgent">, pero entra como oferta urgente (hasta $250)</template></p>
             </div>
             <div class="score" :data-tone="scoreTone">
               <span class="score-value mono">{{ deal.score ?? "—" }}</span>
@@ -315,6 +318,12 @@ onUnmounted(() => {
 .badge.link {
   color: var(--link);
   border-color: var(--link);
+}
+.badge.urgent {
+  color: var(--good);
+  border-color: var(--good);
+  background: var(--good-soft);
+  font-weight: 700;
 }
 .badge.special.low {
   color: var(--ink-3);

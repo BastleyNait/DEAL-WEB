@@ -37,6 +37,7 @@ interface DealRow {
   price_checked_at: string | null;
   special_label: string | null;
   special_demoted: boolean | null;
+  is_urgent: boolean | null;
 }
 
 function toDeal(row: DealRow): Deal {
@@ -66,6 +67,7 @@ function toDeal(row: DealRow): Deal {
     priceCheckedAt: row.price_checked_at,
     specialLabel: row.special_label ?? null,
     specialDemoted: row.special_demoted ?? false,
+    isUrgent: row.is_urgent ?? false,
   };
 }
 

@@ -46,6 +46,12 @@ export interface Deal {
    * rotas). Se ven en su pestaña, pero sin franja violeta y al final del orden.
    */
   specialDemoted: boolean;
+  /**
+   * OFERTA URGENTE: 16GB+ de RAM, SSD de 512GB+, i5 12.ª / i7 11.ª (o su
+   * equivalente Ryzen), menos de $250 y sin problemas declarados. Es la única
+   * que puede pasar del tope de $200.
+   */
+  isUrgent: boolean;
 }
 
 /** 2 en 1 que sí encabeza: los de prioridad baja no cuentan. */
