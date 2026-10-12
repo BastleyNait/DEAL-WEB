@@ -48,7 +48,7 @@ export interface Deal {
   specialDemoted: boolean;
   /**
    * OFERTA URGENTE: 16GB+ de RAM, SSD de 512GB+, i5 12.ª / i7 11.ª (o su
-   * equivalente Ryzen), menos de $250 y sin problemas declarados. Es la única
+   * equivalente Ryzen), hasta $220 y sin problemas declarados. Es la única
    * que puede pasar del tope de $200.
    */
   isUrgent: boolean;

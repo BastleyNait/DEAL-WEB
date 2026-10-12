@@ -38,7 +38,7 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
         <h3 class="title">{{ deal.title }}</h3>
 
         <div class="specs">
-          <span v-if="deal.isUrgent" class="spec spec-urgent" title="16GB+ de RAM, SSD de 512GB+, CPU buscada y menos de $250">
+          <span v-if="deal.isUrgent" class="spec spec-urgent" title="16GB+ de RAM, SSD de 512GB+, CPU buscada y hasta $220">
             💰 URGENTE
           </span>
           <span
