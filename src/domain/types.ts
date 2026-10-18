@@ -52,6 +52,11 @@ export interface Deal {
    * que puede pasar del tope de $200.
    */
   isUrgent: boolean;
+  /**
+   * Lo que dijo el vendedor de una grieta chica, un golpe o un detalle
+   * estético (no de la pantalla ni la bisagra, que se descartan). Null si nada.
+   */
+  cosmeticNote: string | null;
 }
 
 /** 2 en 1 que sí encabeza: los de prioridad baja no cuentan. */
@@ -118,6 +123,8 @@ export function reviewFlags(deal: Deal): string[] {
   if (!deal.hasDescription) flags.push("sin descripción");
   if (!deal.hasBatteryInfo) flags.push("sin dato de batería");
   if (needsBatteryGradeReview(deal.batteryGrade)) flags.push(`batería grado ${deal.batteryGrade}`);
+  // Grieta chica, golpe o detalle estético: se acepta, pero hay que verlo en las fotos.
+  if (deal.cosmeticNote) flags.push(`🔍 revisar fotos: «${deal.cosmeticNote}»`);
   return flags;
 }
 

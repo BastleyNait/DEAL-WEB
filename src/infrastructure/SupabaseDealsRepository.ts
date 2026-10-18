@@ -38,6 +38,7 @@ interface DealRow {
   special_label: string | null;
   special_demoted: boolean | null;
   is_urgent: boolean | null;
+  cosmetic_note: string | null;
 }
 
 function toDeal(row: DealRow): Deal {
@@ -68,6 +69,7 @@ function toDeal(row: DealRow): Deal {
     specialLabel: row.special_label ?? null,
     specialDemoted: row.special_demoted ?? false,
     isUrgent: row.is_urgent ?? false,
+    cosmeticNote: row.cosmetic_note ?? null,
   };
 }
 
