@@ -6,6 +6,8 @@ import { SupabasePublishClient } from "./infrastructure/SupabasePublishClient";
 import { SupabasePublicationStatusRepository } from "./infrastructure/SupabasePublicationStatusRepository";
 import { SupabasePublisherStatusRepository } from "./infrastructure/SupabasePublisherStatusRepository";
 import { usePublisherStatus } from "./composables/usePublisherStatus";
+import { SupabasePurchasesRepository } from "./infrastructure/SupabasePurchasesRepository";
+import { usePurchases } from "./composables/usePurchases";
 import FacebookQueuePanel from "./components/FacebookQueuePanel.vue";
 import { useDeals } from "./composables/useDeals";
 import { useClock } from "./composables/useClock";
@@ -75,12 +77,19 @@ watch(facebookOpen, (open) => {
 });
 onBeforeUnmount(() => clearInterval(fastPoll));
 
+// Cola de compradas por publicar ("🛒 La compro" en Telegram o link agregado).
+const { pending: pendingPurchases, reload: reloadPurchases } = usePurchases(
+  new SupabasePurchasesRepository(supabaseUrl, anonKey),
+);
+
 const publishOpen = ref(false);
 const publishPrefillUrl = ref<string | undefined>(undefined);
 
 function openPublish(url?: string) {
   publishPrefillUrl.value = url;
   publishOpen.value = true;
+  // Lo marcado en Telegram desde la última vez aparece sin recargar la página.
+  reloadPurchases();
 }
 function closePublish() {
   publishOpen.value = false;
@@ -151,6 +160,7 @@ const emptyHint = computed(() => {
       @toggle-theme="toggleTheme"
       :facebook-queued="facebookQueued"
       :publisher-state="publisherStatus.state"
+      :pending-purchases="pendingPurchases.length"
       @publish="openPublish()"
       @facebook="facebookOpen = true"
     />
@@ -209,8 +219,10 @@ const emptyHint = computed(() => {
       v-if="publishOpen"
       :client="publishClient"
       :prefilled-url="publishPrefillUrl"
+      :pending-purchases="pendingPurchases"
       @close="closePublish"
       @published="reloadPublications"
+      @purchases-changed="reloadPurchases"
     />
 
     <FacebookQueuePanel

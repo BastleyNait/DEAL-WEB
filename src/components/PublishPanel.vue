@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import type { PublishClient } from "../domain/publish-types";
+import type { PublishClient, Purchase } from "../domain/publish-types";
 import { usePublish } from "../composables/usePublish";
 
 const props = defineProps<{
   client: PublishClient;
   /** Si se abre desde una oferta ya conocida, el link viene puesto y se resuelve solo. */
   prefilledUrl?: string;
+  /** Compradas que todavía no están en la tienda (cola). */
+  pendingPurchases: Purchase[];
 }>();
-const emit = defineEmits<{ close: []; published: [] }>();
+const emit = defineEmits<{ close: []; published: []; purchasesChanged: [] }>();
 
 // El link a la tienda es un dato público de marketing, no un secreto — no
 // hace falta bajarlo del backend para mostrarlo en el mensaje de éxito.
@@ -27,10 +29,55 @@ const {
   canPublish,
   reset,
   resolveUrl,
+  resolvePurchase,
   confirmPublish,
 } = usePublish(props.client);
 
 const pastedUrl = ref(props.prefilledUrl ?? "");
+
+// Cola de compradas: el texto de cada una se pide recién al tocar "Preparar".
+const openedPurchase = ref<string | null>(null);
+const queueBusy = ref(false);
+const queueError = ref<string | null>(null);
+
+function preparePurchase(legacyId: string, refresh = false) {
+  openedPurchase.value = legacyId;
+  resolvePurchase(legacyId, refresh);
+}
+
+async function dismiss(purchase: Purchase) {
+  if (!confirm(`¿Sacar "${purchase.title ?? purchase.legacyId}" de la cola? No la borra: solo deja de aparecer.`)) return;
+  queueBusy.value = true;
+  try {
+    await props.client.dismissPurchase(purchase.legacyId);
+    emit("purchasesChanged");
+  } catch (err) {
+    queueError.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    queueBusy.value = false;
+  }
+}
+
+async function addToQueue() {
+  const url = pastedUrl.value.trim();
+  if (!url) return;
+  queueBusy.value = true;
+  queueError.value = null;
+  try {
+    await props.client.addPurchase(url);
+    pastedUrl.value = "";
+    emit("purchasesChanged");
+  } catch (err) {
+    queueError.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    queueBusy.value = false;
+  }
+}
+
+function boughtLabel(p: Purchase): string {
+  const date = new Date(p.boughtAt).toLocaleDateString("es-PE", { day: "numeric", month: "short" });
+  return p.source === "telegram" ? `🛒 ${p.boughtBy ?? "Telegram"} · ${date}` : `agregada a mano · ${date}`;
+}
 
 watch(
   () => props.prefilledUrl,
@@ -50,10 +97,12 @@ function submitLink() {
 function startOver() {
   reset();
   pastedUrl.value = "";
+  openedPurchase.value = null;
 }
 
 function onPublished() {
   emit("published");
+  emit("purchasesChanged");
 }
 
 watch(step, (s) => {
@@ -75,7 +124,31 @@ watch(step, (s) => {
       <div class="content">
         <!-- Paso 1: pegar el link -->
         <div v-if="step === 'idle'" class="step-paste">
-          <label class="label" for="ebay-link">Link de la publicación de eBay</label>
+          <!-- Cola: lo marcado con "🛒 La compro" en Telegram o agregado a mano. -->
+          <p class="label">Compradas por publicar · {{ pendingPurchases.length }}</p>
+          <ul v-if="pendingPurchases.length" class="queue">
+            <li v-for="p in pendingPurchases" :key="p.legacyId" class="queue-item">
+              <img v-if="p.imageUrl" :src="p.imageUrl" alt="" loading="lazy" class="queue-thumb" />
+              <div class="queue-main">
+                <a :href="p.url" target="_blank" rel="noopener noreferrer" class="queue-title">
+                  {{ p.title ?? `eBay ${p.legacyId}` }}
+                </a>
+                <p class="queue-meta">
+                  <span v-if="p.price != null">${{ p.price }} · </span>{{ boughtLabel(p) }}
+                  <span v-if="p.hasDraft"> · texto listo</span>
+                </p>
+              </div>
+              <div class="queue-actions">
+                <button type="button" class="primary small" @click="preparePurchase(p.legacyId)">Preparar</button>
+                <button type="button" class="ghost small" :disabled="queueBusy" title="Sacar de la cola" @click="dismiss(p)">✕</button>
+              </div>
+            </li>
+          </ul>
+          <p v-else class="hint">
+            Vacía. Lo que marques con «🛒 La compro» en Telegram aparece acá solo.
+          </p>
+
+          <label class="label" for="ebay-link">Otro link de eBay</label>
           <div class="paste-row">
             <input
               id="ebay-link"
@@ -84,11 +157,15 @@ watch(step, (s) => {
               placeholder="https://www.ebay.com/itm/..."
               @keyup.enter="submitLink"
             />
+            <button type="button" class="ghost" :disabled="!pastedUrl.trim() || queueBusy" @click="addToQueue">
+              + Cola
+            </button>
             <button type="button" class="primary" :disabled="!pastedUrl.trim()" @click="submitLink">Buscar</button>
           </div>
           <p class="hint">
-            Sirve para cualquier laptop que hayas comprado, la haya encontrado el cazador o no.
+            «+ Cola» la guarda para publicarla después; «Buscar» arma el borrador ahora.
           </p>
+          <p v-if="queueError" class="notice error inline">{{ queueError }}</p>
         </div>
 
         <p v-else-if="step === 'resolving'" class="loading label">buscando la publicación en eBay…</p>
@@ -100,7 +177,18 @@ watch(step, (s) => {
 
         <!-- Paso 2: borrador editable -->
         <div v-else-if="step === 'draft' || step === 'publishing'" class="draft">
-          <p class="original label">original: {{ originalTitle }}</p>
+          <p class="original label">
+            original: {{ originalTitle }}
+            <button
+              v-if="openedPurchase && step === 'draft'"
+              type="button"
+              class="link-btn"
+              title="Vuelve a leer eBay y genera el texto de nuevo"
+              @click="preparePurchase(openedPurchase, true)"
+            >
+              ↻ regenerar texto
+            </button>
+          </p>
 
           <label class="label" for="pub-title">Título</label>
           <input id="pub-title" v-model="title" type="text" maxlength="100" />
@@ -267,6 +355,71 @@ textarea {
 .paste-row {
   display: flex;
   gap: 8px;
+}
+
+.queue {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+}
+.queue-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+}
+.queue-item + .queue-item {
+  border-top: 1px solid var(--rule);
+}
+.queue-thumb {
+  flex: none;
+  width: 48px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.queue-main {
+  flex: 1;
+  min-width: 0;
+}
+.queue-title {
+  display: block;
+  font-size: 13px;
+  color: var(--ink);
+  text-decoration: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.queue-title:hover {
+  color: var(--link);
+}
+.queue-meta {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+.queue-actions {
+  flex: none;
+  display: flex;
+  gap: 6px;
+}
+.small {
+  font-size: 12px;
+  padding: 5px 10px;
+}
+.link-btn {
+  font: inherit;
+  margin-left: 8px;
+  padding: 0;
+  color: var(--link);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
 }
 .paste-row input {
   flex: 1;

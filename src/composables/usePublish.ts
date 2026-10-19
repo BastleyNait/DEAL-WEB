@@ -1,5 +1,5 @@
 import { computed, reactive, ref } from "vue";
-import type { PublishClient, PublishResult } from "../domain/publish-types";
+import type { PublishClient, PublishResult, ResolvedListing } from "../domain/publish-types";
 
 export type PublishStep = "idle" | "resolving" | "draft" | "publishing" | "done" | "error";
 
@@ -50,11 +50,12 @@ export function usePublish(client: PublishClient) {
     queueForFacebook.value = true;
   }
 
-  async function resolveUrl(url: string) {
+  /** Arma el borrador a partir de lo que trae el backend (sea de un link o de la cola). */
+  async function loadDraft(fetchDraft: () => Promise<ResolvedListing>) {
     reset();
     step.value = "resolving";
     try {
-      const resolved = await client.resolve(url);
+      const resolved = await fetchDraft();
       itemId.value = resolved.itemId;
       originalTitle.value = resolved.title;
       ebayUrl.value = resolved.url;
@@ -68,6 +69,14 @@ export function usePublish(client: PublishClient) {
       step.value = "error";
     }
   }
+
+  const resolveUrl = (url: string) => loadDraft(() => client.resolve(url));
+
+  /**
+   * Una compra de la cola: el texto se genera recién acá, la primera vez que se
+   * abre, y queda guardado; las siguientes veces sale del caché sin tocar eBay.
+   */
+  const resolvePurchase = (legacyId: string, refresh = false) => loadDraft(() => client.purchaseDraft(legacyId, refresh));
 
   async function confirmPublish() {
     if (!canPublish.value) return;
@@ -107,6 +116,7 @@ export function usePublish(client: PublishClient) {
     canPublish,
     reset,
     resolveUrl,
+    resolvePurchase,
     confirmPublish,
   };
 }

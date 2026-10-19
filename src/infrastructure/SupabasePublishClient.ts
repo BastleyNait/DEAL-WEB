@@ -35,6 +35,19 @@ export class SupabasePublishClient implements PublishClient {
     return (json.data as { queued: number }).queued;
   }
 
+  async addPurchase(url: string): Promise<void> {
+    await this.call({ action: "purchase-add", url });
+  }
+
+  async dismissPurchase(legacyId: string): Promise<void> {
+    await this.call({ action: "purchase-dismiss", legacyId });
+  }
+
+  async purchaseDraft(legacyId: string, refresh = false): Promise<ResolvedListing> {
+    const json = await this.call({ action: "purchase-draft", legacyId, refresh });
+    return json.data as ResolvedListing;
+  }
+
   private async call(body: Record<string, unknown>): Promise<{ data: unknown }> {
     if (!this.publishToken) {
       throw new Error("Falta VITE_PUBLISH_TOKEN en el build del frontend — no se puede publicar.");

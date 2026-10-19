@@ -33,6 +33,36 @@ export interface PublishClient {
    * fallidas. Devuelve cuántas movió.
    */
   queueFacebook(itemIds?: string[]): Promise<number>;
+  /** Agrega un link de eBay a la cola de compradas por publicar. */
+  addPurchase(url: string): Promise<void>;
+  /** Saca una compra de la cola (no la borra: queda el registro). */
+  dismissPurchase(legacyId: string): Promise<void>;
+  /**
+   * Borrador de publicación de una compra de la cola. Se genera la primera vez
+   * (lee eBay) y después sale del caché, salvo que se pida `refresh`.
+   */
+  purchaseDraft(legacyId: string, refresh?: boolean): Promise<ResolvedListing>;
+}
+
+/** Una laptop comprada que todavía hay que publicar (vista purchases_public). */
+export interface Purchase {
+  legacyId: string;
+  itemId: string;
+  url: string;
+  /** "telegram" si se marcó con "🛒 La compro"; "manual" si se agregó el link. */
+  source: "telegram" | "manual";
+  boughtBy: string | null;
+  boughtAt: string;
+  hasDraft: boolean;
+  title: string | null;
+  price: number | null;
+  imageUrl: string | null;
+  /** Ya está en la tienda. */
+  storeSlug: string | null;
+}
+
+export interface PurchasesRepository {
+  listAll(): Promise<Purchase[]>;
 }
 
 export type FacebookStatus = "none" | "queued" | "posted" | "failed" | "skipped";

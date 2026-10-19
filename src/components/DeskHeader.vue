@@ -9,6 +9,8 @@ defineProps<{
   /** Publicaciones esperando en la cola de Facebook y estado del publicador de tu PC. */
   facebookQueued: number;
   publisherState: PublisherState;
+  /** Compradas que todavía no se publicaron (cola de Publicar). */
+  pendingPurchases: number;
 }>();
 
 const emit = defineEmits<{ refresh: []; toggleTheme: []; publish: []; facebook: [] }>();
@@ -49,7 +51,9 @@ const emit = defineEmits<{ refresh: []; toggleTheme: []; publish: []; facebook: 
       <span v-else class="stamp label">
         {{ loading ? "buscando…" : lastUpdated ? `últ. lectura ${lastUpdated.toLocaleTimeString()}` : "sin leer" }}
       </span>
-      <button type="button" class="ghost publish" @click="emit('publish')">+ Publicar</button>
+      <button type="button" class="ghost publish" @click="emit('publish')">
+        + Publicar<span v-if="pendingPurchases > 0" class="queued mono" :title="`${pendingPurchases} compradas por publicar`">{{ pendingPurchases }}</span>
+      </button>
       <button
         type="button"
         class="ghost facebook"
@@ -152,6 +156,9 @@ const emit = defineEmits<{ refresh: []; toggleTheme: []; publish: []; facebook: 
 }
 .publish:hover {
   background: var(--link-soft);
+}
+.publish .queued {
+  margin-left: 6px;
 }
 
 .facebook {
