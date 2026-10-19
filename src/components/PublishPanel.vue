@@ -12,7 +12,7 @@ const emit = defineEmits<{ close: []; published: [] }>();
 
 // El link a la tienda es un dato público de marketing, no un secreto — no
 // hace falta bajarlo del backend para mostrarlo en el mensaje de éxito.
-const STORE_BASE_URL = "https://revolt-laptops.vercel.app";
+const STORE_BASE_URL = "https://revolt-laptops.com";
 
 const {
   step,
@@ -133,7 +133,8 @@ watch(step, (s) => {
         <div v-else-if="step === 'done'" class="done">
           <p class="done-title">Publicado como borrador ✅</p>
           <p class="hint">
-            Está oculto en la tienda hasta que lo actives desde tu panel de administración.
+            Está oculto en la tienda hasta que lo actives desde tu panel de administración. Sale como
+            «En camino · llega en 10 a 15 días hábiles»; desmarcalo en el admin cuando llegue.
           </p>
           <a
             v-if="result"
