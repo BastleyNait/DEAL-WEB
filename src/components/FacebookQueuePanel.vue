@@ -1,6 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
-import type { FacebookStatus, PublicationStatus, PublishClient, PublisherStatus } from "../domain/publish-types";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import type {
+  FacebookStatus,
+  PublicationStatus,
+  PublishClient,
+  PublisherStatus,
+  StoreLaptop,
+} from "../domain/publish-types";
 
 const props = defineProps<{
   client: PublishClient;
@@ -14,23 +20,70 @@ const LAUNCH_URL = "revolt-fb://start";
 // Cuánto esperar a que el publicador empiece a latir antes de mostrar el plan B.
 const LAUNCH_GRACE_MS = 25_000;
 
-const STATUS_LABEL: Record<FacebookStatus, string> = {
-  queued: "En cola",
-  failed: "Fallidas",
-  skipped: "Salteadas",
-  none: "Solo en la tienda",
-  posted: "Ya publicadas",
-};
-const GROUP_ORDER: FacebookStatus[] = ["queued", "failed", "skipped", "none", "posted"];
-
-const groups = computed(() =>
-  GROUP_ORDER.map((status) => ({
-    status,
-    label: STATUS_LABEL[status],
-    items: props.publications.filter((p) => p.facebookStatus === status),
-  })).filter((g) => g.items.length > 0),
-);
 const count = (status: FacebookStatus) => props.publications.filter((p) => p.facebookStatus === status).length;
+
+// --- Catálogo: todas las laptops que hay AHORA en revolt-laptops.com ----------
+// Se lee de la tienda cada vez que se abre el panel (y con "↻ Actualizar"), así
+// que lo que cambiaste en /admin se ve acá. La foto, el precio y las specs son
+// lo que permite distinguir dos "Laptop Lenovo — 16GB RAM, 512GB SSD".
+const catalog = ref<StoreLaptop[]>([]);
+const catalogLoading = ref(true);
+const catalogError = ref<string | null>(null);
+
+async function loadCatalog() {
+  catalogLoading.value = true;
+  catalogError.value = null;
+  try {
+    catalog.value = await props.client.storeCatalog();
+  } catch (err) {
+    catalogError.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    catalogLoading.value = false;
+  }
+}
+onMounted(loadCatalog);
+
+const publicationBySlug = computed(() => {
+  const map = new Map<string, PublicationStatus>();
+  for (const p of props.publications) if (p.storeSlug) map.set(p.storeSlug, p);
+  return map;
+});
+
+// "none" = todavía no pasó por la cola de Facebook (incluye las que no tienen fila).
+const statusOf = (laptop: StoreLaptop): FacebookStatus =>
+  publicationBySlug.value.get(laptop.slug)?.facebookStatus ?? "none";
+
+const STATUS_ORDER: Record<FacebookStatus, number> = { queued: 0, failed: 1, none: 2, skipped: 3, posted: 4 };
+const STATUS_BADGE: Record<FacebookStatus, string> = {
+  queued: "En cola",
+  failed: "Falló",
+  none: "Sin publicar en Facebook",
+  skipped: "Salteada",
+  posted: "Ya publicada",
+};
+
+const laptops = computed(() =>
+  [...catalog.value].sort(
+    (a, b) =>
+      Number(b.isActive) - Number(a.isActive) ||
+      STATUS_ORDER[statusOf(a)] - STATUS_ORDER[statusOf(b)] ||
+      a.name.localeCompare(b.name),
+  ),
+);
+
+const specsLine = (l: StoreLaptop) => [l.processor, l.ram, l.storage].filter(Boolean).join(" · ");
+const priceText = (l: StoreLaptop) =>
+  `${l.currency === "PEN" ? "S/" : l.currency} ${Math.round(l.price).toLocaleString("es-PE")}`;
+const storeUrl = (l: StoreLaptop) => `https://revolt-laptops.com/laptops/${l.slug}`;
+const canQueue = (l: StoreLaptop) => ["none", "skipped", "failed"].includes(statusOf(l));
+
+// Publicaciones que ya no coinciden con ninguna laptop de la tienda (borradas en
+// /admin): se siguen mostrando para no perderlas de vista.
+const orphans = computed(() => {
+  if (catalog.value.length === 0) return [];
+  const slugs = new Set(catalog.value.map((l) => l.slug));
+  return props.publications.filter((p) => !p.storeSlug || !slugs.has(p.storeSlug));
+});
 
 const online = computed(() => props.publisher.state !== "offline");
 const stateText = computed(() => {
@@ -76,13 +129,12 @@ const busy = ref(false);
 const message = ref<string | null>(null);
 const errorMessage = ref<string | null>(null);
 
-async function queue(itemIds: string[] | undefined, what: string) {
+async function run(job: () => Promise<string>) {
   busy.value = true;
   errorMessage.value = null;
   message.value = null;
   try {
-    const moved = await props.client.queueFacebook(itemIds);
-    message.value = moved > 0 ? `${moved} ${what} pasaron a la cola.` : "No había nada para encolar.";
+    message.value = await job();
     emit("changed");
   } catch (err) {
     errorMessage.value = err instanceof Error ? err.message : String(err);
@@ -91,13 +143,37 @@ async function queue(itemIds: string[] | undefined, what: string) {
   }
 }
 
-const retryFailed = () => queue(undefined, "fallidas");
-const queueOne = (itemId: string) => queue([itemId], "publicación");
+async function queueIds(itemIds: string[] | undefined, what: string): Promise<string> {
+  const moved = await props.client.queueFacebook(itemIds);
+  return moved > 0 ? `${moved} ${what} pasaron a la cola.` : "No había nada para encolar.";
+}
+
+// Una laptop de la tienda: si ya tiene fila en publications se encola por id; si
+// la cargaste directo en /admin, el backend le crea la fila primero.
+async function queueLaptop(laptop: StoreLaptop) {
+  const pub = publicationBySlug.value.get(laptop.slug);
+  if (pub) await queueIds([pub.itemId], "publicación");
+  else await props.client.queueStoreProduct(laptop.productId);
+}
+
+const retryFailed = () => run(() => queueIds(undefined, "fallidas"));
+const queueOne = (laptop: StoreLaptop) =>
+  run(async () => {
+    await queueLaptop(laptop);
+    return `“${laptop.name}” pasó a la cola.`;
+  });
+const queueOrphan = (itemId: string) => run(() => queueIds([itemId], "publicación"));
+
+// Solo las activas: un borrador todavía no está en la tienda, se encola a mano.
+const pendingLaptops = computed(() =>
+  laptops.value.filter((l) => l.isActive && ["none", "skipped"].includes(statusOf(l))),
+);
 const queueAllPending = () =>
-  queue(
-    props.publications.filter((p) => p.facebookStatus === "none").map((p) => p.itemId),
-    "publicaciones",
-  );
+  run(async () => {
+    const batch = [...pendingLaptops.value];
+    for (const laptop of batch) await queueLaptop(laptop);
+    return `${batch.length} laptops pasaron a la cola.`;
+  });
 </script>
 
 <template>
@@ -141,31 +217,63 @@ const queueAllPending = () =>
           <button type="button" class="ghost" :disabled="busy || count('failed') === 0" @click="retryFailed">
             Reintentar fallidas ({{ count("failed") }})
           </button>
-          <button type="button" class="ghost" :disabled="busy || count('none') === 0" @click="queueAllPending">
-            Encolar las {{ count("none") }} que faltan
+          <button type="button" class="ghost" :disabled="busy || pendingLaptops.length === 0" @click="queueAllPending">
+            Encolar las {{ pendingLaptops.length }} que faltan
+          </button>
+          <button type="button" class="ghost" :disabled="catalogLoading" @click="loadCatalog">
+            {{ catalogLoading ? "Leyendo la tienda…" : "↻ Actualizar" }}
           </button>
         </div>
         <p v-if="message" class="hint ok">{{ message }}</p>
         <p v-if="errorMessage" class="notice error">{{ errorMessage }}</p>
 
-        <p v-if="publications.length === 0" class="empty">
-          Todavía no hay publicaciones. Usá “+ Publicar” con el link de una laptop; si dejás marcado Facebook, queda
-          en esta cola.
+        <p v-if="catalogError" class="notice error">No se pudo leer la tienda: {{ catalogError }}</p>
+        <p v-else-if="catalogLoading && catalog.length === 0" class="empty">
+          Leyendo las laptops de revolt-laptops.com…
         </p>
 
-        <section v-for="g in groups" :key="g.status" class="group">
-          <h3 class="label">{{ g.label }} · {{ g.items.length }}</h3>
+        <section v-if="laptops.length" class="group">
+          <h3 class="label">Laptops en revolt-laptops.com · {{ laptops.length }}</h3>
           <ul>
-            <li v-for="p in g.items" :key="p.itemId" class="item">
-              <span class="item-title">{{ p.title ?? p.itemId }}</span>
+            <li v-for="l in laptops" :key="l.productId" class="laptop" :class="{ draft: !l.isActive }">
+              <a :href="storeUrl(l)" target="_blank" rel="noopener" class="thumb" title="Abrir en la tienda">
+                <img v-if="l.image" :src="l.image" :alt="l.name" loading="lazy" decoding="async" />
+                <span v-else class="no-photo">sin foto</span>
+              </a>
+              <div class="info">
+                <p class="name">{{ l.name }}</p>
+                <p v-if="specsLine(l)" class="specs mono">{{ specsLine(l) }}</p>
+                <p class="meta">
+                  <strong class="price mono">{{ priceText(l) }}</strong>
+                  <span class="chip" :class="{ warn: !l.isActive }">{{ l.isActive ? "Activa" : "Borrador" }}</span>
+                  <span v-if="l.inTransit" class="chip">En camino</span>
+                  <span class="chip fb" :class="statusOf(l)">{{ STATUS_BADGE[statusOf(l)] }}</span>
+                  <span class="photos">{{ l.photos }} fotos</span>
+                </p>
+              </div>
+              <button v-if="canQueue(l)" type="button" class="mini" :disabled="busy" @click="queueOne(l)">
+                {{ statusOf(l) === "failed" ? "Reintentar" : "Encolar" }}
+              </button>
+            </li>
+          </ul>
+        </section>
+
+        <section v-if="orphans.length" class="group">
+          <h3 class="label">Otras publicaciones (ya no están en la tienda) · {{ orphans.length }}</h3>
+          <ul>
+            <li v-for="p in orphans" :key="p.itemId" class="item">
+              <span class="item-title">
+                {{ p.title ?? p.itemId }}
+                <span class="chip fb" :class="p.facebookStatus">{{ STATUS_BADGE[p.facebookStatus] }}</span>
+              </span>
               <button
-                v-if="g.status === 'none' || g.status === 'skipped' || g.status === 'failed'"
+                v-if="p.facebookStatus === 'none' || p.facebookStatus === 'skipped' || p.facebookStatus === 'failed'"
                 type="button"
                 class="mini"
                 :disabled="busy"
-                @click="queueOne(p.itemId)"
+                @click="queueOrphan(p.itemId)"
               >
-                {{ g.status === "failed" ? "Reintentar" : "Encolar" }}
+                {{ p.facebookStatus === "failed" ? "Reintentar" : "Encolar" }}
               </button>
             </li>
           </ul>
@@ -191,7 +299,7 @@ const queueAllPending = () =>
 .dialog {
   display: flex;
   flex-direction: column;
-  width: min(560px, 100%);
+  width: min(700px, 100%);
   max-height: min(86vh, 760px);
   background: var(--surface);
   border: 1px solid var(--rule-strong);
@@ -359,6 +467,98 @@ code {
   flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.laptop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+}
+.laptop + .laptop {
+  border-top: 1px solid var(--rule);
+}
+.laptop.draft {
+  background: var(--surface-sunk);
+}
+.thumb {
+  flex: none;
+  display: block;
+  width: 84px;
+  height: 64px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface-sunk);
+  border: 1px solid var(--rule);
+}
+.thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.no-photo {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.info {
+  flex: 1;
+  min-width: 0;
+}
+.name {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.specs {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 8px;
+  margin: 5px 0 0;
+  font-size: 12px;
+}
+.price {
+  font-size: 13px;
+}
+.mono {
+  font-family: "IBM Plex Mono", monospace;
+}
+.photos {
+  color: var(--ink-3);
+}
+.chip {
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  border: 1px solid var(--rule-strong);
+  color: var(--ink-2);
+}
+.chip.warn {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+.chip.fb.queued {
+  color: var(--link);
+  border-color: var(--link);
+}
+.chip.fb.posted {
+  color: var(--good);
+  border-color: var(--good);
+}
+.chip.fb.failed {
+  color: var(--urgent);
+  border-color: var(--urgent);
 }
 
 .primary {

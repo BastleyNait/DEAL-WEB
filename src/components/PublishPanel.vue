@@ -227,7 +227,7 @@ watch(step, (s) => {
           <a
             v-if="result"
             class="primary"
-            :href="`${STORE_BASE_URL}/products/${result.slug}`"
+            :href="`${STORE_BASE_URL}/laptops/${result.slug}`"
             target="_blank"
             rel="noopener noreferrer"
           >

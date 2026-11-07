@@ -1,4 +1,4 @@
-import type { PublishClient, PublishResult, ResolvedListing } from "../domain/publish-types";
+import type { PublishClient, PublishResult, ResolvedListing, StoreLaptop } from "../domain/publish-types";
 
 /**
  * Llama a la Edge Function publish-deal (no a una vista REST: publicar tiene
@@ -46,6 +46,15 @@ export class SupabasePublishClient implements PublishClient {
   async purchaseDraft(legacyId: string, refresh = false): Promise<ResolvedListing> {
     const json = await this.call({ action: "purchase-draft", legacyId, refresh });
     return json.data as ResolvedListing;
+  }
+
+  async storeCatalog(): Promise<StoreLaptop[]> {
+    const json = await this.call({ action: "store-catalog" });
+    return json.data as StoreLaptop[];
+  }
+
+  async queueStoreProduct(productId: string): Promise<void> {
+    await this.call({ action: "facebook-queue-store", productId });
   }
 
   private async call(body: Record<string, unknown>): Promise<{ data: unknown }> {

@@ -42,6 +42,29 @@ export interface PublishClient {
    * (lee eBay) y después sale del caché, salvo que se pida `refresh`.
    */
   purchaseDraft(legacyId: string, refresh?: boolean): Promise<ResolvedListing>;
+  /** Todas las laptops que hay hoy en revolt-laptops.com (leídas en el momento, no un caché). */
+  storeCatalog(): Promise<StoreLaptop[]>;
+  /** Encola para Facebook una laptop de la tienda, haya pasado o no por la Mesa de compra. */
+  queueStoreProduct(productId: string): Promise<void>;
+}
+
+/** Una laptop tal como está ahora en la tienda REVOLT. */
+export interface StoreLaptop {
+  productId: string;
+  slug: string;
+  name: string;
+  brand: string | null;
+  processor: string | null;
+  ram: string | null;
+  storage: string | null;
+  price: number;
+  currency: string;
+  image: string | null;
+  photos: number;
+  stock: number;
+  /** false = borrador: todavía no se ve en la tienda. */
+  isActive: boolean;
+  inTransit: boolean;
 }
 
 /** Una laptop comprada que todavía hay que publicar (vista purchases_public). */
