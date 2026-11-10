@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import type { Deal } from "../domain/types";
 import { isTopSpecial } from "../domain/types";
+import { dealLabels } from "../domain/dealLabels";
+import { computed } from "vue";
 import { brandInitials } from "../domain/listing-specs";
 import { useDealPresentation } from "../composables/useDealPresentation";
 
 const props = defineProps<{ deal: Deal; budget: number; now: number; seen: boolean; published: boolean }>();
 const emit = defineEmits<{ open: [Deal]; toggleSeen: [string] }>();
+
+// Mismos nombres y jerarquía que Telegram (domain/dealLabels.ts). La CPU prioritaria
+// va con su estrella en el chip de la CPU y la subasta en el formato.
+const chipLabels = computed(() =>
+  dealLabels(props.deal).all.filter((l) => l.id !== "priority" && l.id !== "auction"),
+);
 
 const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checkedAgo, bids } = useDealPresentation(
   () => props.deal,
@@ -38,17 +46,19 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
         <h3 class="title">{{ deal.title }}</h3>
 
         <div class="specs">
-          <span v-if="deal.isUrgent" class="spec spec-urgent" title="16GB+ de RAM, SSD de 512GB+, CPU buscada y hasta $220">
-            💰 URGENTE
-          </span>
-          <span v-if="deal.gpu" class="spec spec-gpu" :title="deal.isGpuDesign ? 'Gráfica dedicada de diseño: AutoCAD, render, video' : 'Gráfica dedicada'">
-            🎮 {{ deal.gpu }}
+          <span
+            v-for="l in chipLabels"
+            :key="l.id"
+            class="spec"
+            :class="`spec-${l.id}`"
+            :title="l.id === 'gpu' && !deal.isGpuDesign ? 'Gráfica dedicada' : l.title"
+          >
+            {{ l.emoji }} {{ l.id === "gpu" ? deal.gpu : l.short }}
           </span>
           <span
-            v-if="deal.specialLabel"
-            class="spec spec-special"
-            :class="{ 'spec-special-low': deal.specialDemoted }"
-            :title="deal.specialDemoted ? 'Convertible, pero Dell: suelen llegar maltratadas' : 'Convertible: se usa como laptop y como tablet'"
+            v-if="deal.specialLabel && deal.specialDemoted"
+            class="spec spec-special spec-special-low"
+            title="Convertible, pero Dell: suelen llegar maltratadas"
           >
             🔄 {{ deal.specialLabel }}
           </span>
@@ -310,6 +320,11 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
   background: var(--special-soft);
   font-weight: 600;
 }
+.spec-great {
+  color: var(--good);
+  font-weight: 700;
+}
+
 .spec-gpu {
   color: var(--link);
   background: var(--surface-sunk);

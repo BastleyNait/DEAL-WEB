@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from "vue";
 import type { Deal, DealDetail, DealsRepository } from "../domain/types";
 import { useDealPresentation } from "../composables/useDealPresentation";
+import { dealLabels, type DealLabelId } from "../domain/dealLabels";
 import { sanitizeDescription, hasRenderableDescription } from "../domain/sanitize-description";
 
 const props = defineProps<{
@@ -15,6 +16,17 @@ const props = defineProps<{
   position: string;
 }>();
 const emit = defineEmits<{ close: []; toggleSeen: [string]; prev: []; next: []; publish: [string] }>();
+
+// Mismos nombres y jerarquía que Telegram (domain/dealLabels.ts).
+const labels = computed(() => dealLabels(props.deal).all);
+const BADGE_CLASS: Record<DealLabelId, string> = {
+  urgent: "urgent",
+  gpu: "gpu",
+  special: "special",
+  great: "good",
+  priority: "link",
+  auction: "",
+};
 
 // El detalle pesado se pide recién al abrir, no viene en el listado.
 const detail = ref<DealDetail | null>(null);
@@ -101,24 +113,17 @@ onUnmounted(() => {
         <div class="head-main">
           <h2>{{ deal.title }}</h2>
           <div class="badges">
-            <span v-if="deal.isUrgent" class="badge urgent" title="16GB+ de RAM, SSD de 512GB+, CPU buscada y hasta $220">
-              💰 OFERTA URGENTE
-            </span>
-            <span v-if="deal.gpu" class="badge gpu" :title="deal.isGpuDesign ? 'Gráfica dedicada de diseño: AutoCAD, render, video' : 'Gráfica dedicada'">
-              🎮 {{ deal.gpu }}
+            <span v-for="l in labels" :key="l.id" class="badge" :class="BADGE_CLASS[l.id]" :title="l.title">
+              {{ l.emoji }} {{ l.id === "gpu" ? deal.gpu : l.name }}
             </span>
             <span
-              v-if="deal.specialLabel"
-              class="badge special"
-              :class="{ low: deal.specialDemoted }"
-              :title="deal.specialDemoted ? 'Convertible, pero Dell: suelen llegar rayadas o rotas, revisá las fotos' : 'Convertible: se usa como laptop y como tablet'"
+              v-if="deal.specialLabel && deal.specialDemoted"
+              class="badge special low"
+              title="Convertible, pero Dell: suelen llegar rayadas o rotas, revisá las fotos"
             >
-              🔄 {{ deal.specialDemoted ? `${deal.specialLabel} · prioridad baja` : `Oferta ${deal.specialLabel}` }}
+              🔄 {{ deal.specialLabel }} · prioridad baja
             </span>
-            <span v-if="deal.isPriority" class="badge link">★ CPU prioritaria</span>
-            <span v-if="deal.isGreatDeal" class="badge good">Ofertaza</span>
-            <span v-if="deal.isAuction" class="badge">Subasta</span>
-            <span v-else-if="deal.hasBestOffer" class="badge link">Acepta oferta</span>
+            <span v-if="!deal.isAuction && deal.hasBestOffer" class="badge link">Acepta oferta</span>
             <span v-if="deal.condition" class="badge">{{ deal.condition }}</span>
           </div>
         </div>
