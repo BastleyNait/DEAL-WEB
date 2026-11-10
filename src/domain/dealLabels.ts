@@ -39,7 +39,7 @@ const LABELS: Record<DealLabelId, DealLabel> = {
     title: "Gráfica dedicada: AutoCAD, render y video. La de diseño es la que más margen deja",
   },
   special: { id: "special", emoji: "🔄", name: "OFERTA 2 EN 1", short: "2 EN 1", title: "Convertible: se usa como laptop y como tablet" },
-  great: { id: "great", emoji: "🚨", name: "OFERTAZA", short: "OFERTAZA", title: "Puntaje de 80 o más" },
+  great: { id: "great", emoji: "🚨", name: "OFERTAZA", short: "OFERTAZA", title: "Puntaje de 80 o más, o 16GB+ a $130 o menos con puntaje de 70 o más" },
   priority: { id: "priority", emoji: "⭐", name: "CPU PRIORITARIA", short: "CPU prioritaria", title: "Una de las CPUs que pediste ver primero" },
 };
 
