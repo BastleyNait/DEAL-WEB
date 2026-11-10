@@ -57,6 +57,10 @@ export interface Deal {
    * estético (no de la pantalla ni la bisagra, que se descartan). Null si nada.
    */
   cosmeticNote: string | null;
+  /** Gráfica dedicada ("NVIDIA Quadro P620 4GB"), o null si es integrada o no se sabe. */
+  gpu: string | null;
+  /** La gráfica sirve para diseño / AutoCAD: es la que más margen deja y se avisa primero. */
+  isGpuDesign: boolean;
 }
 
 /** 2 en 1 que sí encabeza: los de prioridad baja no cuentan. */

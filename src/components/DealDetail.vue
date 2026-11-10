@@ -104,6 +104,9 @@ onUnmounted(() => {
             <span v-if="deal.isUrgent" class="badge urgent" title="16GB+ de RAM, SSD de 512GB+, CPU buscada y hasta $220">
               💰 OFERTA URGENTE
             </span>
+            <span v-if="deal.gpu" class="badge gpu" :title="deal.isGpuDesign ? 'Gráfica dedicada de diseño: AutoCAD, render, video' : 'Gráfica dedicada'">
+              🎮 {{ deal.gpu }}
+            </span>
             <span
               v-if="deal.specialLabel"
               class="badge special"
@@ -319,6 +322,12 @@ onUnmounted(() => {
   color: var(--link);
   border-color: var(--link);
 }
+.badge.gpu {
+  color: var(--link);
+  border-color: var(--link);
+  font-weight: 600;
+}
+
 .badge.urgent {
   color: var(--good);
   border-color: var(--good);

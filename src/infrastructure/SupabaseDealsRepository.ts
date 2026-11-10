@@ -38,6 +38,8 @@ interface DealRow {
   special_label: string | null;
   special_demoted: boolean | null;
   is_urgent: boolean | null;
+  gpu: string | null;
+  gpu_design: boolean | null;
   cosmetic_note: string | null;
 }
 
@@ -69,6 +71,8 @@ function toDeal(row: DealRow): Deal {
     specialLabel: row.special_label ?? null,
     specialDemoted: row.special_demoted ?? false,
     isUrgent: row.is_urgent ?? false,
+    gpu: row.gpu ?? null,
+    isGpuDesign: row.gpu_design ?? false,
     cosmeticNote: row.cosmetic_note ?? null,
   };
 }

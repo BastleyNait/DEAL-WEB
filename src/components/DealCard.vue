@@ -41,6 +41,9 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
           <span v-if="deal.isUrgent" class="spec spec-urgent" title="16GB+ de RAM, SSD de 512GB+, CPU buscada y hasta $220">
             💰 URGENTE
           </span>
+          <span v-if="deal.gpu" class="spec spec-gpu" :title="deal.isGpuDesign ? 'Gráfica dedicada de diseño: AutoCAD, render, video' : 'Gráfica dedicada'">
+            🎮 {{ deal.gpu }}
+          </span>
           <span
             v-if="deal.specialLabel"
             class="spec spec-special"
@@ -307,6 +310,12 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
   background: var(--special-soft);
   font-weight: 600;
 }
+.spec-gpu {
+  color: var(--link);
+  background: var(--surface-sunk);
+  font-weight: 600;
+}
+
 .spec-urgent {
   color: var(--good);
   background: var(--good-soft);
