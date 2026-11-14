@@ -53,7 +53,7 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
             :class="`spec-${l.id}`"
             :title="l.id === 'gpu' && !deal.isGpuDesign ? 'Gráfica dedicada' : l.title"
           >
-            {{ l.emoji }} {{ l.id === "gpu" ? deal.gpu : l.short }}
+            {{ l.emoji }} {{ l.id === "gpu" ? deal.gpu : l.id === "gpuSpecial" && deal.gpu ? `${l.short} · ${deal.gpu}` : l.short }}
           </span>
           <span
             v-if="deal.specialLabel && deal.specialDemoted"
@@ -329,6 +329,13 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
   color: var(--link);
   background: var(--surface-sunk);
   font-weight: 600;
+}
+
+.spec-gpuSpecial {
+  color: var(--link);
+  background: var(--surface-sunk);
+  border: 1px solid var(--link);
+  font-weight: 700;
 }
 
 .spec-urgent {

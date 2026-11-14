@@ -5,12 +5,12 @@ import type { Deal } from "./types";
  * backend para Telegram (DEAL HUNTER: supabase/functions/_shared/domain/
  * deal-labels.ts): si se cambia un nombre o el orden, se cambia en los dos.
  *
- *   💰 OFERTA URGENTE > ⏰ SUBASTA > 🎮 GPU DEDICADA > 🔄 2 EN 1 > 🚨 OFERTAZA
+ *   💰 OFERTA URGENTE > ⏰ SUBASTA > 🎮 ESPECIAL GPU > 🎮 GPU DEDICADA > 🔄 2 EN 1 > 🚨 OFERTAZA
  *
  * El encabezado (headline) es la etiqueta de más jerarquía; el resto son chips.
  * "CPU prioritaria" nunca encabeza: es un chip.
  */
-export type DealLabelId = "urgent" | "auction" | "gpu" | "special" | "great" | "priority";
+export type DealLabelId = "urgent" | "auction" | "gpuSpecial" | "gpu" | "special" | "great" | "priority";
 
 export interface DealLabel {
   id: DealLabelId;
@@ -31,6 +31,13 @@ const LABELS: Record<DealLabelId, DealLabel> = {
     title: "16GB+ de RAM, SSD de 512GB+, CPU buscada y hasta $220",
   },
   auction: { id: "auction", emoji: "⏰", name: "SUBASTA", short: "SUBASTA", title: "Subasta: el precio es el actual, no el final" },
+  gpuSpecial: {
+    id: "gpuSpecial",
+    emoji: "🎮",
+    name: "ESPECIAL GPU",
+    short: "ESPECIAL GPU",
+    title: "Gráfica de diseño (Quadro P620 o mejor): entra hasta $300 aunque pase el tope general",
+  },
   gpu: {
     id: "gpu",
     emoji: "🎮",
@@ -43,15 +50,16 @@ const LABELS: Record<DealLabelId, DealLabel> = {
   priority: { id: "priority", emoji: "⭐", name: "CPU PRIORITARIA", short: "CPU prioritaria", title: "Una de las CPUs que pediste ver primero" },
 };
 
-const HEADLINE_ORDER: DealLabelId[] = ["urgent", "auction", "gpu", "special", "great"];
-const CHIP_ORDER: DealLabelId[] = ["urgent", "gpu", "special", "great", "priority", "auction"];
+const HEADLINE_ORDER: DealLabelId[] = ["urgent", "auction", "gpuSpecial", "gpu", "special", "great"];
+const CHIP_ORDER: DealLabelId[] = ["urgent", "gpuSpecial", "gpu", "special", "great", "priority", "auction"];
 
 /** Todas las etiquetas que le tocan a la oferta, ya en el orden de jerarquía. */
 export function dealLabels(deal: Deal): { headline: DealLabel | null; all: DealLabel[] } {
   const applied = new Set<DealLabelId>();
   if (deal.isUrgent) applied.add("urgent");
   if (deal.isAuction) applied.add("auction");
-  if (deal.gpu) applied.add("gpu");
+  if (deal.isGpuSpecial) applied.add("gpuSpecial");
+  else if (deal.gpu) applied.add("gpu");
   // Una 2 en 1 de baja prioridad (Dell) no cuenta como oferta 2 en 1.
   if (deal.specialLabel && !deal.specialDemoted) applied.add("special");
   if (deal.isGreatDeal && !deal.isAuction) applied.add("great");

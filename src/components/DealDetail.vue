@@ -21,6 +21,7 @@ const emit = defineEmits<{ close: []; toggleSeen: [string]; prev: []; next: []; 
 const labels = computed(() => dealLabels(props.deal).all);
 const BADGE_CLASS: Record<DealLabelId, string> = {
   urgent: "urgent",
+  gpuSpecial: "gpu",
   gpu: "gpu",
   special: "special",
   great: "good",
@@ -114,7 +115,7 @@ onUnmounted(() => {
           <h2>{{ deal.title }}</h2>
           <div class="badges">
             <span v-for="l in labels" :key="l.id" class="badge" :class="BADGE_CLASS[l.id]" :title="l.title">
-              {{ l.emoji }} {{ l.id === "gpu" ? deal.gpu : l.name }}
+              {{ l.emoji }} {{ l.id === "gpu" ? deal.gpu : l.id === "gpuSpecial" && deal.gpu ? `${l.name} · ${deal.gpu}` : l.name }}
             </span>
             <span
               v-if="deal.specialLabel && deal.specialDemoted"
@@ -159,7 +160,7 @@ onUnmounted(() => {
               </div>
               <p v-if="deal.isAuction" class="price-note">puja actual{{ bids ? ` con ${bids}` : "" }}, puede subir</p>
               <p v-else-if="deal.hasBestOffer" class="price-note negotiable">se puede ofertar por menos</p>
-              <p v-if="overBudget" class="price-note over">por encima de tu tope de ${{ budget }}<template v-if="deal.isUrgent">, pero entra como oferta urgente (hasta $220)</template></p>
+              <p v-if="overBudget" class="price-note over">por encima de tu tope de ${{ budget }}<template v-if="deal.isUrgent">, pero entra como oferta urgente (hasta $220)</template><template v-else-if="deal.isGpuSpecial">, pero entra como ESPECIAL GPU (hasta $300)</template></p>
             </div>
             <div class="score" :data-tone="scoreTone">
               <span class="score-value mono">{{ deal.score ?? "—" }}</span>

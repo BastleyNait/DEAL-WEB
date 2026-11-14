@@ -40,6 +40,7 @@ interface DealRow {
   is_urgent: boolean | null;
   gpu: string | null;
   gpu_design: boolean | null;
+  gpu_special: boolean | null;
   cosmetic_note: string | null;
 }
 
@@ -73,6 +74,7 @@ function toDeal(row: DealRow): Deal {
     isUrgent: row.is_urgent ?? false,
     gpu: row.gpu ?? null,
     isGpuDesign: row.gpu_design ?? false,
+    isGpuSpecial: row.gpu_special ?? false,
     cosmeticNote: row.cosmetic_note ?? null,
   };
 }
