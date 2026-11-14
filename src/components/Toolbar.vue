@@ -14,6 +14,7 @@ defineProps<{
     unseen: number;
     all: number;
     special: number;
+    gpu: number;
     great: number;
     review: number;
     buyNow: number;
@@ -26,6 +27,7 @@ const VIEWS: { id: DealView; label: string }[] = [
   { id: "unseen", label: "Sin ver" },
   { id: "all", label: "Todas" },
   { id: "special", label: "🔄 2 en 1" },
+  { id: "gpu", label: "🎮 Especial GPU" },
   { id: "great", label: "Ofertazas" },
   { id: "review", label: "A revisar" },
 ];

@@ -56,6 +56,7 @@ export function useDeals(repository: DealsRepository, isSeen: (itemId: string) =
 
     if (view.value === "unseen") list = list.filter((d) => !isSeen(d.itemId));
     if (view.value === "special") list = list.filter((d) => d.specialLabel);
+    if (view.value === "gpu") list = list.filter((d) => d.isGpuSpecial);
     if (view.value === "great") list = list.filter((d) => d.isGreatDeal);
     if (view.value === "review") list = list.filter(needsReview);
     list = list.filter((d) => dealFormat(d) === format.value);
@@ -100,6 +101,7 @@ export function useDeals(repository: DealsRepository, isSeen: (itemId: string) =
       all: scoped.length,
       unseen: scoped.filter((d) => !isSeen(d.itemId)).length,
       special: scoped.filter((d) => d.specialLabel).length,
+      gpu: scoped.filter((d) => d.isGpuSpecial).length,
       great: scoped.filter((d) => d.isGreatDeal).length,
       review: scoped.filter(needsReview).length,
       buyNow: buyNow.length,

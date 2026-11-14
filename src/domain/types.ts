@@ -72,7 +72,7 @@ export function isTopSpecial(deal: Pick<Deal, "specialLabel" | "specialDemoted">
 
 export type DealSortBy = "score" | "price" | "date" | "ending";
 
-export type DealView = "unseen" | "all" | "special" | "great" | "review";
+export type DealView = "unseen" | "all" | "special" | "gpu" | "great" | "review";
 
 /** Lista densa para escanear muchas, grilla para comparar el estado visual. */
 export type DealLayout = "list" | "grid";

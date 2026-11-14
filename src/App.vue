@@ -135,6 +135,8 @@ const emptyHint = computed(() => {
   if (view.value === "unseen") return "Ya revisaste todas las ofertas guardadas. Van a aparecer nuevas en el próximo barrido.";
   if (view.value === "special")
     return "Ahora mismo no hay ninguna laptop 2 en 1 disponible que cumpla el criterio. El cazador las busca en cada pasada.";
+  if (view.value === "gpu")
+    return "Ahora mismo no hay ninguna con gráfica de diseño (P620 o mejor) hasta $300. El cazador las busca en cada pasada.";
   if (view.value === "great") return "Todavía no apareció ninguna por debajo de $160 ni con puntaje alto.";
   if (view.value === "review") return "Ninguna oferta quedó con datos faltantes: todas traen descripción y batería.";
   return "El cazador todavía no guardó ofertas. Corré la función hunt-deals o esperá al próximo barrido.";
