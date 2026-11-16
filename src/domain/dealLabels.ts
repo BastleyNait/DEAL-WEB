@@ -36,7 +36,7 @@ const LABELS: Record<DealLabelId, DealLabel> = {
     emoji: "🎮",
     name: "ESPECIAL GPU",
     short: "ESPECIAL GPU",
-    title: "Gráfica de diseño (Quadro P620 o mejor): entra hasta $300 aunque pase el tope general",
+    title: "Gráfica de diseño (Quadro P620 o mejor): entra hasta $500 aunque pase el tope general. Solo en el dashboard: no se avisa por el bot principal",
   },
   gpu: {
     id: "gpu",

@@ -154,7 +154,7 @@ const emptyHint = computed(() => {
   if (view.value === "special")
     return "Ahora mismo no hay ninguna laptop 2 en 1 disponible que cumpla el criterio. El cazador las busca en cada pasada.";
   if (view.value === "gpu")
-    return "Ahora mismo no hay ninguna con gráfica de diseño (P620 o mejor) hasta $300. El cazador las busca en cada pasada.";
+    return "Ahora mismo no hay ninguna con gráfica de diseño (P620 o mejor) hasta $500. El cazador las busca en cada pasada.";
   if (view.value === "thinkpad") return "Ahora mismo no hay ninguna ThinkPad que cumpla el criterio.";
   if (view.value === "dismissed") return "No descartaste nada. Con ✕ en una oferta, deja de aparecer.";
   if (view.value === "great") return "Todavía no apareció ninguna por debajo de $160 ni con puntaje alto.";

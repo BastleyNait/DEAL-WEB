@@ -61,7 +61,7 @@ export interface Deal {
   gpu: string | null;
   /** La gráfica sirve para diseño / AutoCAD: es la que más margen deja y se avisa primero. */
   isGpuDesign: boolean;
-  /** ESPECIAL GPU: gráfica de diseño (P620 o mejor) que entra hasta $300. */
+  /** ESPECIAL GPU: gráfica de diseño (P620 o mejor) que entra hasta $500. */
   isGpuSpecial: boolean;
 }
 

@@ -161,7 +161,7 @@ onUnmounted(() => {
               </div>
               <p v-if="deal.isAuction" class="price-note">puja actual{{ bids ? ` con ${bids}` : "" }}, puede subir</p>
               <p v-else-if="deal.hasBestOffer" class="price-note negotiable">se puede ofertar por menos</p>
-              <p v-if="overBudget" class="price-note over">por encima de tu tope de ${{ budget }}<template v-if="deal.isUrgent">, pero entra como oferta urgente (hasta $220)</template><template v-else-if="deal.isGpuSpecial">, pero entra como ESPECIAL GPU (hasta $300)</template></p>
+              <p v-if="overBudget" class="price-note over">por encima de tu tope de ${{ budget }}<template v-if="deal.isUrgent">, pero entra como oferta urgente (hasta $220)</template><template v-else-if="deal.isGpuSpecial">, pero entra como ESPECIAL GPU (hasta $500)</template></p>
             </div>
             <div class="score" :data-tone="scoreTone">
               <span class="score-value mono">{{ deal.score ?? "—" }}</span>
