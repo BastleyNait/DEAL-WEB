@@ -1,5 +1,5 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
-import type { Deal, DealFormat, DealsRepository, DealSortBy, DealView } from "../domain/types";
+import type { Deal, DealFormat, DealSection, DealsRepository, DealSortBy, DealView } from "../domain/types";
 import { dealFormat, isThinkPad, needsReview } from "../domain/types";
 
 const AUTO_REFRESH_MS = 60_000;
@@ -22,6 +22,10 @@ export function useDeals(
 
   // Arranca en "sin ver": lo primero que querés es lo que todavía no miraste.
   const view = ref<DealView>("unseen");
+  // Las ESPECIAL GPU (estaciones de trabajo, hasta $500) viven en su propio
+  // apartado: no se mezclan con la mesa de compra de siempre.
+  const section = ref<DealSection>("deals");
+  const inSection = (d: Deal) => (section.value === "workstations" ? d.isGpuSpecial : !d.isGpuSpecial);
   // Arranca en compra directa: las subastas quedan en segundo plano porque su
   // precio final es desconocido.
   const format = ref<DealFormat>("buyNow");
@@ -51,7 +55,8 @@ export function useDeals(
   }
 
   const visibleDeals = computed(() => {
-    let list = deals.value;
+    // "Descartadas" junta las de los dos apartados, para poder restaurar cualquiera.
+    let list = section.value === "deals" && view.value === "dismissed" ? deals.value : deals.value.filter(inSection);
 
     // Una subasta que ya cerró no se puede pujar: no es una oferta, es historia.
     if (format.value === "auction") {
@@ -59,13 +64,13 @@ export function useDeals(
     }
 
     // Lo descartado no aparece en ninguna vista, salvo en "Descartadas" (para restaurarlo).
-    list = view.value === "dismissed" ? list.filter((d) => isDismissed(d.itemId)) : list.filter((d) => !isDismissed(d.itemId));
-    if (view.value === "unseen") list = list.filter((d) => !isSeen(d.itemId));
-    if (view.value === "thinkpad") list = list.filter(isThinkPad);
-    if (view.value === "special") list = list.filter((d) => d.specialLabel);
-    if (view.value === "gpu") list = list.filter((d) => d.isGpuSpecial);
-    if (view.value === "great") list = list.filter((d) => d.isGreatDeal);
-    if (view.value === "review") list = list.filter(needsReview);
+    const activeView = section.value === "workstations" ? "all" : view.value;
+    list = activeView === "dismissed" ? list.filter((d) => isDismissed(d.itemId)) : list.filter((d) => !isDismissed(d.itemId));
+    if (view.value === "unseen" && activeView === "unseen") list = list.filter((d) => !isSeen(d.itemId));
+    if (activeView === "thinkpad") list = list.filter(isThinkPad);
+    if (activeView === "special") list = list.filter((d) => d.specialLabel);
+    if (activeView === "great") list = list.filter((d) => d.isGreatDeal);
+    if (activeView === "review") list = list.filter(needsReview);
     list = list.filter((d) => dealFormat(d) === format.value);
 
     const term = query.value.trim().toLowerCase();
@@ -94,10 +99,17 @@ export function useDeals(
   });
 
   const counts = computed(() => {
-    const buyNow = deals.value.filter((d) => dealFormat(d) === "buyNow");
+    const isOpen = (d: Deal) => dealFormat(d) === "buyNow" || !d.endDate || new Date(d.endDate).getTime() > Date.now();
+    const live = deals.value.filter((d) => isOpen(d) && !isDismissed(d.itemId));
+    const sections = {
+      deals: live.filter((d) => !d.isGpuSpecial).length,
+      workstations: live.filter((d) => d.isGpuSpecial).length,
+    };
+    const sectionDeals = deals.value.filter(inSection);
+    const buyNow = sectionDeals.filter((d) => dealFormat(d) === "buyNow");
     // Mismo criterio que la lista: las cerradas no cuentan, si no el conmutador
     // promete subastas que después no aparecen.
-    const auction = deals.value.filter(
+    const auction = sectionDeals.filter(
       (d) => dealFormat(d) === "auction" && (!d.endDate || new Date(d.endDate).getTime() > Date.now()),
     );
     // Los contadores de vista cuentan dentro del formato activo: decir
@@ -109,9 +121,10 @@ export function useDeals(
       all: scoped.length,
       unseen: scoped.filter((d) => !isSeen(d.itemId)).length,
       thinkpad: scoped.filter(isThinkPad).length,
-      dismissed: scopedAll.length - scoped.length,
+      // Las descartadas de los dos apartados (la pestaña las junta).
+      dismissed: deals.value.filter((d) => isDismissed(d.itemId)).length,
+      sections,
       special: scoped.filter((d) => d.specialLabel).length,
-      gpu: scoped.filter((d) => d.isGpuSpecial).length,
       great: scoped.filter((d) => d.isGreatDeal).length,
       review: scoped.filter(needsReview).length,
       buyNow: buyNow.length,
@@ -132,5 +145,5 @@ export function useDeals(
     if (intervalId) clearInterval(intervalId);
   });
 
-  return { deals, loading, error, lastUpdated, view, format, sortBy, query, visibleDeals, counts, reload: load };
+  return { deals, loading, error, lastUpdated, view, section, format, sortBy, query, visibleDeals, counts, reload: load };
 }

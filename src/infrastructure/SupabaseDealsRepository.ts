@@ -1,4 +1,5 @@
 import type { Deal, DealDetail, DealsRepository, ListingAspect } from "../domain/types";
+import { workstationScore } from "../domain/workstationScore";
 
 // Tope de filas por respuesta de la API REST de Supabase (max_rows).
 const PAGE_SIZE = 1000;
@@ -52,7 +53,9 @@ function toDeal(row: DealRow): Deal {
     currency: row.currency,
     condition: row.condition,
     cpuMatch: row.cpu_match,
-    score: row.score,
+    // Un solo lugar donde se cambia el puntaje: fila, tarjeta, detalle, orden y color lo leen de acá.
+    score: row.gpu_special ? workstationScore(row.price, row.gpu, row.score, row.is_auction) : row.score,
+    baseScore: row.score,
     isGreatDeal: row.is_great_deal,
     isPriority: row.is_priority,
     hasDescription: row.has_description,

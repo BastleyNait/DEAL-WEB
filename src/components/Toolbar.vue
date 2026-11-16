@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { DealFormat, DealLayout, DealSortBy, DealView } from "../domain/types";
+import type { DealFormat, DealLayout, DealSection, DealSortBy, DealView } from "../domain/types";
 import { MAX_COLUMNS, MIN_COLUMNS } from "../composables/useLayout";
 
 const view = defineModel<DealView>("view", { required: true });
+const section = defineModel<DealSection>("section", { required: true });
 const format = defineModel<DealFormat>("format", { required: true });
 const layout = defineModel<DealLayout>("layout", { required: true });
 const columns = defineModel<number>("columns", { required: true });
@@ -16,11 +17,11 @@ defineProps<{
     thinkpad: number;
     dismissed: number;
     special: number;
-    gpu: number;
     great: number;
     review: number;
     buyNow: number;
     auction: number;
+    sections: { deals: number; workstations: number };
   };
   shown: number;
 }>();
@@ -30,7 +31,6 @@ const VIEWS: { id: DealView; label: string }[] = [
   { id: "all", label: "Todas" },
   { id: "thinkpad", label: "ThinkPad" },
   { id: "special", label: "🔄 2 en 1" },
-  { id: "gpu", label: "🎮 Especial GPU" },
   { id: "great", label: "Ofertazas" },
   { id: "review", label: "A revisar" },
   { id: "dismissed", label: "Descartadas" },
@@ -38,8 +38,34 @@ const VIEWS: { id: DealView; label: string }[] = [
 </script>
 
 <template>
+  <div class="sections" role="tablist" aria-label="Apartado">
+    <button
+      type="button"
+      role="tab"
+      :aria-selected="section === 'deals'"
+      :class="{ active: section === 'deals' }"
+      @click="section = 'deals'"
+    >
+      Mesa de compra
+      <span class="count mono">{{ counts.sections.deals }}</span>
+    </button>
+    <button
+      type="button"
+      role="tab"
+      :aria-selected="section === 'workstations'"
+      :class="{ active: section === 'workstations' }"
+      title="ESPECIAL GPU: gráfica de diseño (P620 o mejor) hasta $500. Puntaje relativo a la gráfica y al precio."
+      @click="section = 'workstations'"
+    >
+      🖥️ Estaciones de trabajo
+      <span class="count mono">{{ counts.sections.workstations }}</span>
+    </button>
+  </div>
   <div class="toolbar">
-    <div class="segmented" role="tablist">
+    <p v-if="section === 'workstations'" class="section-note">
+      Gráfica de diseño hasta $500. El puntaje compara el precio con lo que vale esa gráfica: una T550 a $495 saca poco, una P15v a $190 saca mucho.
+    </p>
+    <div v-else class="segmented" role="tablist">
       <button
         v-for="option in VIEWS"
         :key="option.id"
@@ -142,6 +168,58 @@ const VIEWS: { id: DealView; label: string }[] = [
 </template>
 
 <style scoped>
+/* Dos apartados, como pestañas de carpeta: la mesa de siempre y las
+   estaciones de trabajo, que no se mezclan. */
+.sections {
+  display: flex;
+  gap: 4px;
+  padding: 12px 24px 0;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+}
+.sections button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-3);
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  padding: 8px 16px;
+  margin-bottom: -1px;
+  cursor: pointer;
+}
+.sections button:hover {
+  color: var(--ink-2);
+}
+.sections button.active {
+  color: var(--ink);
+  background: var(--paper);
+  border-color: var(--rule);
+}
+.sections button.active .count {
+  color: var(--link);
+}
+.section-note {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  max-width: 560px;
+}
+@media (max-width: 640px) {
+  .sections {
+    padding: 10px 16px 0;
+  }
+  .sections button {
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+}
+
 .toolbar {
   position: sticky;
   top: 0;

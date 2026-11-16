@@ -165,7 +165,8 @@ onUnmounted(() => {
             </div>
             <div class="score" :data-tone="scoreTone">
               <span class="score-value mono">{{ deal.score ?? "—" }}</span>
-              <span class="label">puntaje</span>
+              <span class="label">{{ deal.isGpuSpecial ? "puntaje de estación" : "puntaje" }}</span>
+              <span v-if="deal.isGpuSpecial" class="label" title="Puntaje general del cazador (CPU, RAM, disco, estado)">general {{ deal.baseScore ?? "—" }}</span>
             </div>
           </div>
 

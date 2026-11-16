@@ -40,7 +40,7 @@ const {
   toggleSeen: toggleDismissed,
   syncError: dismissError,
 } = useSeenDeals(new SupabaseSeenRepository(supabaseUrl, anonKey, "deal_dismissals"));
-const { deals, loading, error, lastUpdated, view, format, sortBy, query, visibleDeals, counts, reload } = useDeals(
+const { deals, loading, error, lastUpdated, view, section, format, sortBy, query, visibleDeals, counts, reload } = useDeals(
   repository,
   isSeen,
   isDismissed,
@@ -153,8 +153,8 @@ const emptyHint = computed(() => {
   if (view.value === "unseen") return "Ya revisaste todas las ofertas guardadas. Van a aparecer nuevas en el próximo barrido.";
   if (view.value === "special")
     return "Ahora mismo no hay ninguna laptop 2 en 1 disponible que cumpla el criterio. El cazador las busca en cada pasada.";
-  if (view.value === "gpu")
-    return "Ahora mismo no hay ninguna con gráfica de diseño (P620 o mejor) hasta $500. El cazador las busca en cada pasada.";
+  if (section.value === "workstations")
+    return "Ahora mismo no hay ninguna estación de trabajo (gráfica P620 o mejor, hasta $500) que cumpla el criterio. El cazador las busca en cada pasada.";
   if (view.value === "thinkpad") return "Ahora mismo no hay ninguna ThinkPad que cumpla el criterio.";
   if (view.value === "dismissed") return "No descartaste nada. Con ✕ en una oferta, deja de aparecer.";
   if (view.value === "great") return "Todavía no apareció ninguna por debajo de $160 ni con puntaje alto.";
@@ -189,6 +189,7 @@ const emptyHint = computed(() => {
 
     <Toolbar
       v-model:view="view"
+      v-model:section="section"
       v-model:format="format"
       v-model:layout="layout"
       v-model:columns="columns"

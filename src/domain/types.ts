@@ -14,7 +14,14 @@ export interface Deal {
   currency: string;
   condition: string | null;
   cpuMatch: string | null;
+  /**
+   * Puntaje que se muestra y por el que se ordena. En una ESPECIAL GPU es el de
+   * estación de trabajo (relativo a la gráfica y al precio, ver
+   * workstationScore.ts); en el resto, el general.
+   */
   score: number | null;
+  /** Puntaje general del cazador (CPU, RAM, disco, estado), sin ajustar. */
+  baseScore: number | null;
   isGreatDeal: boolean;
   isPriority: boolean;
   hasDescription: boolean;
@@ -72,7 +79,10 @@ export function isTopSpecial(deal: Pick<Deal, "specialLabel" | "specialDemoted">
 
 export type DealSortBy = "score" | "price" | "date" | "ending";
 
-export type DealView = "unseen" | "all" | "thinkpad" | "special" | "gpu" | "great" | "review" | "dismissed";
+export type DealView = "unseen" | "all" | "thinkpad" | "special" | "great" | "review" | "dismissed";
+
+/** La mesa de compra de siempre, o el apartado de estaciones de trabajo (ESPECIAL GPU). */
+export type DealSection = "deals" | "workstations";
 
 /** ThinkPad (y ThinkBook no): la línea que más se revende. */
 export const isThinkPad = (d: { title: string }) => /think\s*pad/i.test(d.title);
