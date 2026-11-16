@@ -13,6 +13,8 @@ defineProps<{
   counts: {
     unseen: number;
     all: number;
+    thinkpad: number;
+    dismissed: number;
     special: number;
     gpu: number;
     great: number;
@@ -26,10 +28,12 @@ defineProps<{
 const VIEWS: { id: DealView; label: string }[] = [
   { id: "unseen", label: "Sin ver" },
   { id: "all", label: "Todas" },
+  { id: "thinkpad", label: "ThinkPad" },
   { id: "special", label: "🔄 2 en 1" },
   { id: "gpu", label: "🎮 Especial GPU" },
   { id: "great", label: "Ofertazas" },
   { id: "review", label: "A revisar" },
+  { id: "dismissed", label: "Descartadas" },
 ];
 </script>
 

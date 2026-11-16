@@ -6,8 +6,8 @@ import { computed } from "vue";
 import { brandInitials } from "../domain/listing-specs";
 import { useDealPresentation } from "../composables/useDealPresentation";
 
-const props = defineProps<{ deal: Deal; budget: number; now: number; seen: boolean; published: boolean }>();
-const emit = defineEmits<{ open: [Deal]; toggleSeen: [string] }>();
+const props = defineProps<{ deal: Deal; budget: number; now: number; seen: boolean; dismissed: boolean; published: boolean }>();
+const emit = defineEmits<{ open: [Deal]; toggleSeen: [string]; toggleDismissed: [string] }>();
 
 // Mismos nombres y jerarquía que Telegram (domain/dealLabels.ts). La CPU prioritaria
 // va con su estrella en el chip de la CPU y la subasta en el formato.
@@ -104,15 +104,26 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
     </button>
 
     <!-- Fuera de la tarjeta para que no dispare también la apertura del detalle. -->
-    <button
-      type="button"
-      class="seen-toggle"
-      :aria-pressed="seen"
-      :title="seen ? 'Marcar como no vista' : 'Marcar como vista'"
-      @click="emit('toggleSeen', deal.itemId)"
-    >
-      {{ seen ? "visto" : "marcar" }}
-    </button>
+    <div class="actions">
+      <button
+        type="button"
+        class="seen-toggle"
+        :aria-pressed="seen"
+        :title="seen ? 'Marcar como no vista' : 'Marcar como vista'"
+        @click="emit('toggleSeen', deal.itemId)"
+      >
+        {{ seen ? "visto" : "marcar" }}
+      </button>
+      <button
+        type="button"
+        class="seen-toggle dismiss"
+        :title="dismissed ? 'Volver a mostrar esta oferta' : 'Descartar: no aparece más'"
+        :aria-label="dismissed ? 'Restaurar' : 'Descartar'"
+        @click="emit('toggleDismissed', deal.itemId)"
+      >
+        {{ dismissed ? "↩ restaurar" : "✕" }}
+      </button>
+    </div>
   </div>
 </template>
 
@@ -164,10 +175,14 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
   border-top-color: var(--special);
 }
 
-.seen-toggle {
+.actions {
   position: absolute;
   top: 9px;
   right: 9px;
+  display: flex;
+  gap: 5px;
+}
+.seen-toggle {
   font-family: "IBM Plex Mono", monospace;
   font-size: 10px;
   letter-spacing: 0.06em;
@@ -186,6 +201,10 @@ const { specs, flags, overBudget, scoreTone, countdown, seller, seenAgo, checked
 .seen-toggle[aria-pressed="true"] {
   color: var(--ink-2);
   border-color: var(--rule-strong);
+}
+.seen-toggle.dismiss:hover {
+  color: var(--urgent, #c0392b);
+  border-color: var(--urgent, #c0392b);
 }
 
 .shot {

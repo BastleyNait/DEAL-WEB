@@ -10,11 +10,12 @@ defineProps<{
   layout: DealLayout;
   columns: number;
   isSeen: (itemId: string) => boolean;
+  isDismissed: (itemId: string) => boolean;
   isPublished: (itemId: string) => boolean;
   emptyHint: string;
 }>();
 
-const emit = defineEmits<{ open: [Deal]; toggleSeen: [string] }>();
+const emit = defineEmits<{ open: [Deal]; toggleSeen: [string]; toggleDismissed: [string] }>();
 </script>
 
 <template>
@@ -35,9 +36,11 @@ const emit = defineEmits<{ open: [Deal]; toggleSeen: [string] }>();
         :budget="budget"
         :now="now"
         :seen="isSeen(deal.itemId)"
+        :dismissed="isDismissed(deal.itemId)"
         :published="isPublished(deal.itemId)"
         @open="emit('open', $event)"
         @toggle-seen="emit('toggleSeen', $event)"
+        @toggle-dismissed="emit('toggleDismissed', $event)"
       />
       <DealRow
         v-else
@@ -45,9 +48,11 @@ const emit = defineEmits<{ open: [Deal]; toggleSeen: [string] }>();
         :budget="budget"
         :now="now"
         :seen="isSeen(deal.itemId)"
+        :dismissed="isDismissed(deal.itemId)"
         :published="isPublished(deal.itemId)"
         @open="emit('open', $event)"
         @toggle-seen="emit('toggleSeen', $event)"
+        @toggle-dismissed="emit('toggleDismissed', $event)"
       />
     </li>
   </ol>

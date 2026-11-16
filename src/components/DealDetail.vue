@@ -10,12 +10,13 @@ const props = defineProps<{
   budget: number;
   now: number;
   seen: boolean;
+  dismissed: boolean;
   repository: DealsRepository;
   hasPrev: boolean;
   hasNext: boolean;
   position: string;
 }>();
-const emit = defineEmits<{ close: []; toggleSeen: [string]; prev: []; next: []; publish: [string] }>();
+const emit = defineEmits<{ close: []; toggleSeen: [string]; toggleDismissed: [string]; prev: []; next: []; publish: [string] }>();
 
 // Mismos nombres y jerarquía que Telegram (domain/dealLabels.ts).
 const labels = computed(() => dealLabels(props.deal).all);
@@ -225,6 +226,9 @@ onUnmounted(() => {
         <span class="position label">{{ position }}</span>
         <button type="button" class="ghost" @click="emit('toggleSeen', deal.itemId)">
           {{ seen ? "Marcar como no vista" : "Marcar como vista" }}
+        </button>
+        <button type="button" class="ghost" @click="emit('toggleDismissed', deal.itemId)">
+          {{ dismissed ? "↩ Restaurar" : "✕ Descartar" }}
         </button>
         <button type="button" class="ghost publish" @click="emit('publish', deal.url)">Publicar</button>
         <a class="primary" :href="deal.url" target="_blank" rel="noopener noreferrer">Abrir en eBay ↗</a>

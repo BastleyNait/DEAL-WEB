@@ -34,9 +34,16 @@ const misconfigured = !supabaseUrl || !anonKey;
 // concreta del repositorio. El resto de la app solo conoce DealsRepository.
 const repository = new SupabaseDealsRepository(supabaseUrl, anonKey);
 const { isSeen, markSeen, toggleSeen, syncError } = useSeenDeals(new SupabaseSeenRepository(supabaseUrl, anonKey));
+// Descartadas: no aparecen más (en ningún dispositivo) salvo en la pestaña "Descartadas".
+const {
+  isSeen: isDismissed,
+  toggleSeen: toggleDismissed,
+  syncError: dismissError,
+} = useSeenDeals(new SupabaseSeenRepository(supabaseUrl, anonKey, "deal_dismissals"));
 const { deals, loading, error, lastUpdated, view, format, sortBy, query, visibleDeals, counts, reload } = useDeals(
   repository,
   isSeen,
+  isDismissed,
 );
 const now = useClock();
 const { toggle: toggleTheme } = useTheme();
@@ -123,6 +130,17 @@ function stepDeal(delta: number) {
   markSeen(target.itemId);
 }
 
+// Descartar desde el detalle pasa a la siguiente (o cierra si era la última):
+// la descartada ya no está en la lista de atrás.
+function dismissFromDetail(itemId: string) {
+  const wasDismissed = isDismissed(itemId);
+  toggleDismissed(itemId);
+  if (wasDismissed) return;
+  if (hasNext.value) stepDeal(1);
+  else if (hasPrev.value) stepDeal(-1);
+  else openedDeal.value = null;
+}
+
 // La oferta abierta se vuelve a leer de los datos frescos en cada refresco,
 // para que el modal no quede mostrando un precio viejo mientras está abierto.
 const detailDeal = computed(() =>
@@ -137,6 +155,8 @@ const emptyHint = computed(() => {
     return "Ahora mismo no hay ninguna laptop 2 en 1 disponible que cumpla el criterio. El cazador las busca en cada pasada.";
   if (view.value === "gpu")
     return "Ahora mismo no hay ninguna con gráfica de diseño (P620 o mejor) hasta $300. El cazador las busca en cada pasada.";
+  if (view.value === "thinkpad") return "Ahora mismo no hay ninguna ThinkPad que cumpla el criterio.";
+  if (view.value === "dismissed") return "No descartaste nada. Con ✕ en una oferta, deja de aparecer.";
   if (view.value === "great") return "Todavía no apareció ninguna por debajo de $160 ni con puntaje alto.";
   if (view.value === "review") return "Ninguna oferta quedó con datos faltantes: todas traen descripción y batería.";
   return "El cazador todavía no guardó ofertas. Corré la función hunt-deals o esperá al próximo barrido.";
@@ -157,7 +177,7 @@ const emptyHint = computed(() => {
       :counts="counts"
       :last-updated="lastUpdated"
       :loading="loading"
-      :sync-error="syncError"
+      :sync-error="syncError ?? dismissError"
       @refresh="reload"
       @toggle-theme="toggleTheme"
       :facebook-queued="facebookQueued"
@@ -193,10 +213,12 @@ const emptyHint = computed(() => {
         :layout="layout"
         :columns="columns"
         :is-seen="isSeen"
+        :is-dismissed="isDismissed"
         :is-published="isPublished"
         :empty-hint="emptyHint"
         @open="openDeal"
         @toggle-seen="toggleSeen"
+        @toggle-dismissed="toggleDismissed"
       />
     </main>
 
@@ -206,12 +228,14 @@ const emptyHint = computed(() => {
       :budget="BUDGET_USD"
       :now="now"
       :seen="isSeen(detailDeal.itemId)"
+      :dismissed="isDismissed(detailDeal.itemId)"
       :repository="repository"
       :has-prev="hasPrev"
       :has-next="hasNext"
       :position="navPosition"
       @close="openedDeal = null"
       @toggle-seen="toggleSeen"
+      @toggle-dismissed="dismissFromDetail"
       @prev="stepDeal(-1)"
       @next="stepDeal(1)"
       @publish="openPublish"

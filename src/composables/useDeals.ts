@@ -1,6 +1,6 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import type { Deal, DealFormat, DealsRepository, DealSortBy, DealView } from "../domain/types";
-import { dealFormat, needsReview } from "../domain/types";
+import { dealFormat, isThinkPad, needsReview } from "../domain/types";
 
 const AUTO_REFRESH_MS = 60_000;
 
@@ -10,7 +10,11 @@ const AUTO_REFRESH_MS = 60_000;
  * (Dependency Inversion) en vez de importar Supabase directo, así se puede
  * testear con un repositorio fake.
  */
-export function useDeals(repository: DealsRepository, isSeen: (itemId: string) => boolean) {
+export function useDeals(
+  repository: DealsRepository,
+  isSeen: (itemId: string) => boolean,
+  isDismissed: (itemId: string) => boolean = () => false,
+) {
   const deals = ref<Deal[]>([]);
   const loading = ref(true);
   const error = ref<string | null>(null);
@@ -54,7 +58,10 @@ export function useDeals(repository: DealsRepository, isSeen: (itemId: string) =
       list = list.filter((d) => !d.endDate || new Date(d.endDate).getTime() > Date.now());
     }
 
+    // Lo descartado no aparece en ninguna vista, salvo en "Descartadas" (para restaurarlo).
+    list = view.value === "dismissed" ? list.filter((d) => isDismissed(d.itemId)) : list.filter((d) => !isDismissed(d.itemId));
     if (view.value === "unseen") list = list.filter((d) => !isSeen(d.itemId));
+    if (view.value === "thinkpad") list = list.filter(isThinkPad);
     if (view.value === "special") list = list.filter((d) => d.specialLabel);
     if (view.value === "gpu") list = list.filter((d) => d.isGpuSpecial);
     if (view.value === "great") list = list.filter((d) => d.isGreatDeal);
@@ -95,11 +102,14 @@ export function useDeals(repository: DealsRepository, isSeen: (itemId: string) =
     );
     // Los contadores de vista cuentan dentro del formato activo: decir
     // "Sin ver 234" cuando en pantalla hay 160 sería mentir.
-    const scoped = format.value === "auction" ? auction : buyNow;
+    const scopedAll = format.value === "auction" ? auction : buyNow;
+    const scoped = scopedAll.filter((d) => !isDismissed(d.itemId));
 
     return {
       all: scoped.length,
       unseen: scoped.filter((d) => !isSeen(d.itemId)).length,
+      thinkpad: scoped.filter(isThinkPad).length,
+      dismissed: scopedAll.length - scoped.length,
       special: scoped.filter((d) => d.specialLabel).length,
       gpu: scoped.filter((d) => d.isGpuSpecial).length,
       great: scoped.filter((d) => d.isGreatDeal).length,
