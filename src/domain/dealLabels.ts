@@ -47,7 +47,7 @@ const LABELS: Record<DealLabelId, DealLabel> = {
   },
   special: { id: "special", emoji: "🔄", name: "OFERTA 2 EN 1", short: "2 EN 1", title: "Convertible: se usa como laptop y como tablet" },
   great: { id: "great", emoji: "🚨", name: "OFERTAZA", short: "OFERTAZA", title: "Puntaje de 80 o más, o 16GB+ a $130 o menos con puntaje de 70 o más" },
-  priority: { id: "priority", emoji: "⭐", name: "CPU PRIORITARIA", short: "CPU prioritaria", title: "Una de las CPUs que pediste ver primero" },
+  priority: { id: "priority", emoji: "⭐", name: "PRIORITARIA", short: "Prioritaria", title: "i7 de 10.ª, 11.ª o 12.ª, i5 de 12.ª o ThinkPad serie X: lo que más sale" },
 };
 
 const HEADLINE_ORDER: DealLabelId[] = ["urgent", "auction", "gpuSpecial", "gpu", "special", "great"];
