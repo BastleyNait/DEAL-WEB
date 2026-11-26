@@ -30,6 +30,10 @@ export class SupabasePublishClient implements PublishClient {
     return json.data as PublishResult;
   }
 
+  async setAutoPublish(enabled: boolean): Promise<void> {
+    await this.call({ action: "facebook-auto", enabled });
+  }
+
   async queueFacebook(itemIds?: string[]): Promise<number> {
     const json = await this.call({ action: "facebook-queue", ...(itemIds ? { itemIds } : {}) });
     return (json.data as { queued: number }).queued;

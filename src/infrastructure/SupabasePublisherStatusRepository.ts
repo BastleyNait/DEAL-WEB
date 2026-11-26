@@ -4,6 +4,7 @@ interface StatusRow {
   last_seen: string;
   state: Exclude<PublisherState, "offline">;
   current_title: string | null;
+  auto_publish: boolean | null;
 }
 
 /** Si el último latido es más viejo que esto, el publicador se considera apagado (él late cada 10 s). */
@@ -23,11 +24,15 @@ export class SupabasePublisherStatusRepository implements PublisherStatusReposit
     if (!res.ok) throw new Error(`No se pudo leer publisher_status_public (${res.status}): ${await res.text()}`);
 
     const [row] = (await res.json()) as StatusRow[];
-    if (!row) return { state: "offline", currentTitle: null };
+    if (!row) return { state: "offline", currentTitle: null, autoPublish: false };
+    // El interruptor vale aunque el publicador esté apagado: se aplica al encenderlo.
+    const autoPublish = row.auto_publish === true;
 
     // Se compara con la hora de este navegador: un reloj muy desfasado marcaría
     // "apagado" de más; es un aviso informativo, no bloquea nada.
     const alive = Date.now() - new Date(row.last_seen).getTime() < STALE_MS;
-    return alive ? { state: row.state, currentTitle: row.current_title } : { state: "offline", currentTitle: null };
+    return alive
+      ? { state: row.state, currentTitle: row.current_title, autoPublish }
+      : { state: "offline", currentTitle: null, autoPublish };
   }
 }

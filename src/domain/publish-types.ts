@@ -18,6 +18,8 @@ export interface PublishResult {
 
 /** Puerto: resolver un link y publicar el borrador confirmado. */
 export interface PublishClient {
+  /** Prende o apaga "Auto-publicar" del publicador de Facebook. */
+  setAutoPublish(enabled: boolean): Promise<void>;
   resolve(url: string): Promise<ResolvedListing>;
   publish(input: {
     itemId: string;
@@ -109,6 +111,8 @@ export type PublisherState = "offline" | "idle" | "working" | "waiting_confirm";
 export interface PublisherStatus {
   state: PublisherState;
   currentTitle: string | null;
+  /** Interruptor "Auto-publicar": publica sin esperar el click en Facebook. */
+  autoPublish: boolean;
 }
 
 /** Puerto: ¿está encendido el publicador de tu PC y qué está haciendo? */

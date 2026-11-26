@@ -125,6 +125,32 @@ watch(online, (isOn) => {
 });
 onBeforeUnmount(() => clearTimeout(launchTimer));
 
+// "Auto-publicar": se muestra al toque lo elegido, sin esperar los 10 s del
+// próximo latido; si el pedido falla vuelve a lo que diga el servidor.
+const autoOverride = ref<boolean | null>(null);
+const autoPublish = computed(() => autoOverride.value ?? props.publisher.autoPublish);
+const autoSaving = ref(false);
+watch(
+  () => props.publisher.autoPublish,
+  (v) => {
+    if (autoOverride.value === v) autoOverride.value = null;
+  },
+);
+async function toggleAutoPublish() {
+  const next = !autoPublish.value;
+  autoOverride.value = next;
+  autoSaving.value = true;
+  errorMessage.value = null;
+  try {
+    await props.client.setAutoPublish(next);
+  } catch (err) {
+    autoOverride.value = null;
+    errorMessage.value = `No se pudo cambiar Auto-publicar: ${err instanceof Error ? err.message : String(err)}`;
+  } finally {
+    autoSaving.value = false;
+  }
+}
+
 const busy = ref(false);
 const message = ref<string | null>(null);
 const errorMessage = ref<string | null>(null);
@@ -196,6 +222,27 @@ const queueAllPending = () =>
           </button>
         </section>
 
+        <label class="auto" :class="{ on: autoPublish }">
+          <button
+            type="button"
+            role="switch"
+            class="switch"
+            :aria-checked="autoPublish"
+            :disabled="autoSaving"
+            @click="toggleAutoPublish"
+          >
+            <span class="knob" aria-hidden="true"></span>
+          </button>
+          <span class="auto-text">
+            <strong>Auto-publicar</strong>
+            <span>{{
+              autoPublish
+                ? "Publica solo, sin esperar tu click en Facebook."
+                : "Se detiene antes de publicar cada aviso hasta que toques Publicar."
+            }}</span>
+          </span>
+        </label>
+
         <p v-if="launching" class="hint">
           Se está abriendo en tu PC. Si el navegador pregunta si abrir “Publicador de Facebook”, aceptá y marcá
           “Permitir siempre”.
@@ -209,7 +256,7 @@ const queueAllPending = () =>
             </li>
           </ul>
         </div>
-        <p v-if="publisher.state === 'waiting_confirm'" class="hint strong">
+        <p v-if="publisher.state === 'waiting_confirm' && !autoPublish" class="hint strong">
           Andá a la ventana de Facebook: abajo a la derecha está el panel con Publicar / Saltear.
         </p>
 
@@ -353,6 +400,69 @@ const queueAllPending = () =>
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ink-3);
+}
+
+.auto {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.auto-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+.auto-text span {
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+.switch {
+  flex: none;
+  position: relative;
+  width: 40px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--rule);
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+.switch:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  transition: transform 160ms ease;
+}
+.auto.on .switch {
+  background: #0c7a4d;
+}
+.auto.on .knob {
+  transform: translateX(18px);
+}
+.switch:focus-visible {
+  outline: 2px solid #86a5ff;
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .switch,
+  .knob {
+    transition: none;
+  }
 }
 
 .status {

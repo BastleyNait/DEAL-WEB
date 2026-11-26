@@ -8,7 +8,7 @@ import type { PublisherStatus, PublisherStatusRepository } from "../domain/publi
  * ejemplo mientras el panel está abierto).
  */
 export function usePublisherStatus(repository: PublisherStatusRepository) {
-  const status = ref<PublisherStatus>({ state: "offline", currentTitle: null });
+  const status = ref<PublisherStatus>({ state: "offline", currentTitle: null, autoPublish: false });
   // false hasta la primera lectura, para no mostrar "apagado" antes de saberlo.
   const loaded = ref(false);
 
